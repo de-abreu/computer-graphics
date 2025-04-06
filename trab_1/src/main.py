@@ -17,6 +17,7 @@ from app.objects.piece import Piece
 from app.shader import create_shader_program
 from app.window import show_window, terminate, init_window
 from app.object_controller import ObjectController
+from app.logger import Logger
 
 VERTEX_SHADER_SOURCE = """
     attribute vec3 position;
@@ -55,6 +56,7 @@ def main():
         ),
     ]
     controller = ObjectController(objects, window)
+    logger = Logger(objects)
     show_window(window)
     glEnable(GL_DEPTH_TEST)
 
@@ -64,6 +66,7 @@ def main():
         glClearColor(*palette.background, 1.0)
 
         controller.handle_input()
+        logger.log(controller.i)
         for obj in objects:
             obj.draw()
         sleep(1.0 / 30)  # 30 FPS target

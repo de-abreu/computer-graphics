@@ -21,8 +21,8 @@
           jupyter
           numpy
           pyglm
-          python-lsp-server
           pyopengl
+          tabulate
         ]);
     in {
       # Define the development shell
