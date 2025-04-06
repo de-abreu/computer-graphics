@@ -48,9 +48,9 @@ class ObjectController:
 
         # Position
         if get_key(w, W) == PRESS:
-            o.position["z"] += step
-        if get_key(w, S) == PRESS:
             o.position["z"] -= step
+        if get_key(w, S) == PRESS:
+            o.position["z"] += step
         if get_key(w, A) == PRESS:
             o.position["x"] -= step
         if get_key(w, D) == PRESS:

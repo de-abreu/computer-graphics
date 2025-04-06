@@ -21,25 +21,25 @@ class Piece(Object):
 
     # Trigonometric formula to return the coordinate of a vertex at the edge of
     # a cylinder
+    @staticmethod
     def _vert_coordinate(
-        self, angle: float, height: float, radius: float
+        angle: float, height: float, radius: float
     ) -> tuple[float, float, float]:
-        return (radius * cos(angle), radius * sin(angle), height)  # (x, y, z)
+        return (radius * cos(angle), height, radius * sin(angle))  # (x, y, z)
 
     # Function to place vertices at the edges of a type's given shape
     def _set_vertices(
         self, silhouette: list[tuple[float, float]], sectors: int
     ) -> list[tuple[float, float, float]]:
         step = tau / sectors
-        last_sector = sectors - 1
         coordinate = self._vert_coordinate
         radii, heights = [list(t) for t in zip(*silhouette)]
         vertices: list[tuple[float, float, float]] = []
 
         # type's bottom
-        for s in range(last_sector):
+        for s in range(sectors):
             angle = s * step
-            next_angle = (s + 1) % last_sector * step
+            next_angle = (s + 1) % sectors * step
             vertices.append(coordinate(angle, heights[0], radii[0]))
             vertices.append(coordinate(next_angle, heights[0], radii[0]))
             vertices.append((0.0, 0.0, 0.0))
@@ -47,9 +47,9 @@ class Piece(Object):
         # type's side
         for h in range(len(heights) - 1):
             next_h = h + 1
-            for s in range(last_sector):
+            for s in range(sectors):
                 angle = s * step
-                next_angle = (s + 1) % last_sector * step
+                next_angle = (s + 1) % sectors * step
 
                 # Square shaped face
                 p = [
@@ -68,7 +68,7 @@ class Piece(Object):
         # type's top
         for s in range(sectors):
             angle = s * step
-            next_angle = (s + 1) % last_sector * step
+            next_angle = (s + 1) % sectors * step
             vertices.append(coordinate(angle, heights[-1], radii[-1]))
             vertices.append(coordinate(next_angle, heights[-1], radii[-1]))
             vertices.append((0.0, heights[-1], 0.0))

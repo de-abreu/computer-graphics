@@ -186,8 +186,8 @@ class Object:
 
         self.transformation = (
             translation
-            @ rotationMatrix(self.rotation, "x")
-            @ rotationMatrix(self.rotation, "y")
             @ rotationMatrix(self.rotation, "z")
+            @ rotationMatrix(self.rotation, "y")
+            @ rotationMatrix(self.rotation, "x")
             @ scale
-        ).T.astype(float32)
+        ).astype(float32)

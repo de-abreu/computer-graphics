@@ -33,14 +33,12 @@ FRAGMENT_SHADER_SOURCE = """
 
 
 def main():
-    window = init_window(720, 600, "Program")
+    window = init_window(940, 1000, "Program")
     program = create_shader_program(VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE)
     glBindBuffer(GL_ARRAY_BUFFER, glGenBuffers(1))
     palette = Palette()
-    pawn = Piece(
-        "pawn", (0.0, 0.0, -3.0), (0.0, 0.0, 0.0), 0.25, palette.yellow, program
-    )
-    controller = ObjectController(pawn, window)
+    king = Piece("king", (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), 0.2, palette.yellow, program)
+    controller = ObjectController(king, window)
     show_window(window)
     glEnable(GL_DEPTH_TEST)
 
@@ -50,7 +48,7 @@ def main():
         glClearColor(*palette.background, 1.0)
 
         controller.handle_input()
-        pawn.draw()
+        king.draw()
         glfw.swap_buffers(window)
         glfw.poll_events()
 
