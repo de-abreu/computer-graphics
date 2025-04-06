@@ -1,9 +1,9 @@
 from .object import Object
 from math import tau, cos, sin
-from silhouettes.bishop import BISHOP_SILHOUETTE
-from silhouettes.king import KING_SILHOUETTE, KING_CROWN
-from silhouettes.pawn import PAWN_SILHOUETTE
-from silhouettes.queen import QUEEN_SILHOUETTE
+from .silhouettes.bishop import BISHOP_SILHOUETTE
+from .silhouettes.king import KING_SILHOUETTE, KING_CROWN
+from .silhouettes.pawn import PAWN_SILHOUETTE
+from .silhouettes.queen import QUEEN_SILHOUETTE
 from typing import Any
 from OpenGL.GL import (
     GL_TRUE,

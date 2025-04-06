@@ -28,7 +28,7 @@ from glfw import (
     PRESS,
     get_key,
 )
-from objects.object import Object
+from .objects.object import Object
 
 
 class ObjectController:
