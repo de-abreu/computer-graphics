@@ -38,10 +38,9 @@ def main():
     glBindBuffer(GL_ARRAY_BUFFER, glGenBuffers(1))
     palette = Palette()
     pawn = Piece(
-        "pawn", (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), 0.25, palette.yellow, program
+        "pawn", (0.0, 0.0, -3.0), (0.0, 0.0, 0.0), 0.25, palette.yellow, program
     )
     controller = ObjectController(pawn, window)
-    pawn.draw()
     show_window(window)
     glEnable(GL_DEPTH_TEST)
 
@@ -51,6 +50,7 @@ def main():
         glClearColor(*palette.background, 1.0)
 
         controller.handle_input()
+        pawn.draw()
         glfw.swap_buffers(window)
         glfw.poll_events()
 
