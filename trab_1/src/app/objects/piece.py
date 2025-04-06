@@ -4,7 +4,7 @@ from .silhouettes.bishop import BISHOP_SILHOUETTE
 from .silhouettes.king import KING_SILHOUETTE, KING_CROWN
 from .silhouettes.pawn import PAWN_SILHOUETTE
 from .silhouettes.queen import QUEEN_SILHOUETTE
-from typing import Any
+from typing import Any, override
 from OpenGL.GL import (
     GL_TRUE,
     GL_TRIANGLES,
@@ -105,7 +105,9 @@ class Piece(Object):
         self.color = color + (1.0,)
         self._loc_color = glGetUniformLocation(program, "color")
 
+    @override
     def draw(self):
+        super().draw()
         glUniformMatrix4fv(self.loc, 1, GL_TRUE, self.transformation)
         glUniform4f(self._loc_color, *self.color)
         for triangle in range(0, len(self.vertices), 3):
