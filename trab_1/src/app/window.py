@@ -1,7 +1,8 @@
+from typing import Any
 import glfw
 
 
-def show_window(window):
+def show_window(window: Any) -> None:
     glfw.show_window(window)
 
 
