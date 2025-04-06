@@ -1,4 +1,4 @@
-# Implementation of the Everforest Dark Soft colorscheme.
+# Reimmplementation of the Everforest Dark Soft colorscheme.
 # Source:
 # https://github.com/Gogh-Co/Gogh/blob/master/themes/Everforest%20Dark%20Soft.yml
 
@@ -18,14 +18,30 @@ class Palette:
         default_factory=lambda: (0xA7 / 255, 0xC0 / 255, 0x80 / 255)
     )
     red: tuple[float, float, float] = field(
-        default_factory=lambda: (0xE6 / 255, 0x7E / 255, 0x80 / 255)
+        default_factory=lambda: (
+            0xB3 / 255,
+            0x27 / 255,
+            0x27 / 255,
+        )  # Darker, richer red
     )
     yellow: tuple[float, float, float] = field(
-        default_factory=lambda: (0xDB / 255, 0xBC / 255, 0x7F / 255)
+        default_factory=lambda: (
+            0x9A / 255,
+            0x86 / 255,
+            0x17 / 255,
+        )  # Deep golden yellow
     )
     blue: tuple[float, float, float] = field(
-        default_factory=lambda: (0x7F / 255, 0xBB / 255, 0xB3 / 255)
+        default_factory=lambda: (
+            0x1E / 255,
+            0x5F / 255,
+            0x8B / 255,
+        )  # Darker, bluer shade
     )
     magenta: tuple[float, float, float] = field(
-        default_factory=lambda: (0xD6 / 255, 0x99 / 255, 0xB6 / 255)
+        default_factory=lambda: (
+            0x8B / 255,
+            0x0A / 255,
+            0x6B / 255,
+        )  # Deep plum/magenta
     )
