@@ -7,9 +7,7 @@ from OpenGL.GL import (
     glCompileShader,
     glCreateProgram,
     glCreateShader,
-    glGetProgramInfoLog,
     glGetProgramiv,
-    glGetShaderInfoLog,
     glGetShaderiv,
     glLinkProgram,
     glShaderSource,
@@ -22,8 +20,7 @@ def compile_shader(source: str, shader_type: int):
     glShaderSource(shader, source)
     glCompileShader(shader)
     if not glGetShaderiv(shader, GL_COMPILE_STATUS):
-        error = glGetShaderInfoLog(shader).decode()
-        raise RuntimeError(f"Shader compilation error: {error}")
+        raise RuntimeError("Shader compilation error")
     return shader
 
 
@@ -35,8 +32,7 @@ def create_shader_program(vertex_source: str, fragment_source: str):
     glAttachShader(program, fragment)
     glLinkProgram(program)
     if not glGetProgramiv(program, GL_LINK_STATUS):
-        error = glGetProgramInfoLog(program).decode()
-        raise RuntimeError(f"Shader linking error: {error}")
+        raise RuntimeError("Shader linking error")
 
     glUseProgram(program)
     return program
