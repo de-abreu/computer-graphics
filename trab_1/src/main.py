@@ -33,14 +33,15 @@ FRAGMENT_SHADER_SOURCE = """
 
 
 def main():
+    window = init_window(720, 600, "Program")
     program = create_shader_program(VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE)
     glBindBuffer(GL_ARRAY_BUFFER, glGenBuffers(1))
     palette = Palette()
     pawn = Piece(
         "pawn", (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), 0.25, palette.yellow, program
     )
-    window = init_window(720, 600, "Program")
     controller = ObjectController(pawn, window)
+    pawn.draw()
     show_window(window)
     glEnable(GL_DEPTH_TEST)
 
