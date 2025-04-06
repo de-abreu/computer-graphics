@@ -56,16 +56,17 @@ class TransformDict(dict[str, float]):
 
 
 class Object:
-    vertices: NDArray[float32]
-    _position: TransformDict
     _initial_position: TransformDict
-    _rotation: TransformDict
     _initial_rotation: TransformDict
-    _scale: float
     _initial_scale: float
+    _position: TransformDict
+    _rotation: TransformDict
+    _scale: float
     loc: int
     loc_transformation: int
+    program: Any
     transformation: NDArray[float32]
+    vertices: NDArray[float32]
 
     def __init__(
         self,
@@ -85,20 +86,7 @@ class Object:
             on_change=self.update,
         )
         self._scale = self._initial_scale = scale
-
-        stride = self.vertices.strides[0]
-        offset = ctypes.c_void_p(0)
-
-        # OpenGL setup
-        self.loc = glGetAttribLocation(program, "position")
-        glEnableVertexAttribArray(self.loc)
-        glVertexAttribPointer(self.loc, 3, GL_FLOAT, False, stride, offset)
-        self.loc_transformation = glGetUniformLocation(program, "mat_transformation")
-
-        glBufferData(
-            GL_ARRAY_BUFFER, self.vertices.nbytes, self.vertices, GL_DYNAMIC_DRAW
-        )
-
+        self.program = program
         self.update()
 
     # --- Properties ---
@@ -191,3 +179,18 @@ class Object:
             @ rotationMatrix(self.rotation, "x")
             @ scale
         ).astype(float32)
+
+    def draw(self):
+        stride = self.vertices.strides[0]
+        offset = ctypes.c_void_p(0)
+
+        # OpenGL setup
+        self.loc = glGetAttribLocation(self.program, "position")
+        glEnableVertexAttribArray(self.loc)
+        glVertexAttribPointer(self.loc, 3, GL_FLOAT, False, stride, offset)
+        self.loc_transformation = glGetUniformLocation(
+            self.program, "mat_transformation"
+        )
+        glBufferData(
+            GL_ARRAY_BUFFER, self.vertices.nbytes, self.vertices, GL_DYNAMIC_DRAW
+        )

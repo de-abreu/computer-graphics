@@ -32,17 +32,18 @@ from .objects.object import Object
 
 
 class ObjectController:
-    object: Object
+    objects: list[Object]
     step: float
     window: Any
 
-    def __init__(self, object: Object, window: Any, step: float = 0.01):
-        self.object = object
+    def __init__(self, objects: list[Object], window: Any, step: float = 0.01):
+        self.objects = objects
         self.step = step
         self.window = window
+        self.i = 0
 
     def handle_input(self):
-        o = self.object
+        o = self.objects[self.i]
         w = self.window
         step = self.step
 
@@ -91,3 +92,7 @@ class ObjectController:
                 glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
             else:
                 glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
+
+        # Switch object being controlled
+        if get_key(w, T) == PRESS:
+            self.i = (self.i + 1) % len(self.objects)

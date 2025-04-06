@@ -1,5 +1,5 @@
 from .object import Object
-from typing import Any
+from typing import Any, override
 from OpenGL.GL import (
     GL_TRUE,
     GL_TRIANGLES,
@@ -14,7 +14,8 @@ class Board(Object):
     color: list[tuple[float, float, float, float]]
     _loc_color: int
 
-    def _generate_geometry(self) -> list[tuple[float, float, float]]:
+    @staticmethod
+    def _generate_geometry() -> list[tuple[float, float, float]]:
         step = 0.25
         start_x = -1.0
         start_z = -1.0
@@ -22,7 +23,7 @@ class Board(Object):
 
         for row in range(8):
             for col in range(8):
-                x = start_x + col * step
+                x = start_x + row * step
                 z = start_z + col * step
 
                 # The four corners of a given square
@@ -53,11 +54,17 @@ class Board(Object):
         self.color = [(r, g, b, 1.0) for r, g, b in color]
         self._loc_color = glGetUniformLocation(program, "color")
 
+    @override
     def draw(self):
+        super().draw()
         glUniformMatrix4fv(self.loc_transformation, 1, GL_TRUE, self.transformation)
         i = 0
         for square in range(0, len(self.vertices), 6):
             # Alternate colors
-            glUniform4f(self._loc_color, *self.color[i])
+            row = i // 8  # Integer division to get the row
+            col = i % 8  # Modulus to get the column
+            j = (row + col) % 2  # 0 or 1 for alternating colors
+
+            glUniform4f(self._loc_color, *self.color[j])
             glDrawArrays(GL_TRIANGLES, square, 6)
-            i = (i + 1) % 2
+            i += 1
