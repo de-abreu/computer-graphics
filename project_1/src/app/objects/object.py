@@ -1,3 +1,4 @@
+from copy import copy, deepcopy
 from typing import Any, Callable, override
 from collections.abc import Iterable, Mapping
 from glfw import ctypes
@@ -85,6 +86,18 @@ class TransformDict(dict[str, float]):
         if self._on_change:
             self._on_change()
 
+    def __copy__(self) -> "TransformDict":
+        new_dict = TransformDict(self, on_change=None)
+        new_dict._on_change = self._on_change
+        return new_dict
+
+    def __deepcopy__(self, memo: dict[int, object] | None = None) -> "TransformDict":
+        if memo is None:
+            memo = {}
+        new_dict = TransformDict(self, on_change=copy(self._on_change))
+        memo[id(self)] = new_dict  # helps with recursive copying
+        return new_dict
+
 
 class Object:
     _initial_position: TransformDict
@@ -108,14 +121,16 @@ class Object:
         program: Any,
     ):
         self.vertices = array(shape, dtype=float32)
-        self._position = self._initial_position = TransformDict(
+        self._initial_position = TransformDict(
             {"x": position[0], "y": position[1], "z": position[2]},
             on_change=self.update,
         )
-        self._rotation = self._initial_rotation = TransformDict(
+        self._position = deepcopy(self._initial_position)
+        self._initial_rotation = TransformDict(
             {"x": rotation[0], "y": rotation[1], "z": rotation[2]},
             on_change=self.update,
         )
+        self._rotation = deepcopy(self._initial_rotation)
         self._scale = self._initial_scale = scale
         self.program = program
         self.update()
@@ -147,8 +162,16 @@ class Object:
         self.update()
 
     def reset(self):
-        self._position = self._initial_position
-        self._rotation = self._initial_rotation
+        """
+        Resets the object's position, rotation, and scale to their initial values.
+
+        Note:
+            - For mutable properties (`_position`, `_rotation`), a deep copy is used to prevent
+            unintended side effects if the initial values are modified externally.
+            - `_scale` is directly assigned (no copy) assuming it is an immutable type (e.g., `float`).
+        """
+        self._position = deepcopy(self._initial_position)
+        self._rotation = deepcopy(self._initial_rotation)
         self._scale = self._initial_scale
         self.update()
 
