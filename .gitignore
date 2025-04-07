@@ -22,10 +22,6 @@ wheels/
 MANIFEST
 pyproject.toml
 
-# Jupyter Notebook
-.ipynb_checkpoints/
-*.ipynb
-
 # IDE specific
 .vscode/
 .idea/
@@ -50,6 +46,7 @@ build/
 .DS_Store
 Thumbs.db
 
-# Custom directories
-Aula 07/
-codigos/
+# Flake
+.direnv
+flake.lock
+result
