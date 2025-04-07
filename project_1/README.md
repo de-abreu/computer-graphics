@@ -10,31 +10,26 @@ diferentes cores.
 
 ## Para executar o programa
 
-### Usando Nix Flakes (recomendado)
+### Usando Nix Flakes
 
 Este projeto faz uso de [Nix Flakes](https://nixos.wiki/wiki/flakes) para a
 instalação de dependências em um ambiente, para execução e desenvolvimento,
-isolado. Objetiva-se por meio deste assegurar a reprodutibilidade do programa ao
-estabelecer declarativamente, ao usuário, condições de uso idênticas àquelas em
-que o programa fora desenvolvido. Assim sendo, um usuário que possui o
-gerenciador de pacotes Nix com Flakes habilitados pode executar o programa com o
-comando:
+isolado. Um usuário que possui o gerenciador de pacotes Nix com Flakes
+habilitados pode executar o programa com o comando:
 
 ```bash
 nix run
 ```
 
-E acessar um ambiente de desenvolvimento com todas as dependências utilizadas
-com:
+E acessar um ambiente de desenvolvimento com:
 
 ```bash
 nix develop
 ```
 
-Como benefício adicional, pacotes instalados desta forma estão sujeitos a
+Pacotes instalados desta forma estão sujeitos a
 [garbage collection](https://nix.dev/manual/nix/2.28/package-management/garbage-collection.html),
-de forma a não poluir o sistema do usuário com pacotes dos quais pode fazer uso
-muito ocasionalmente.
+de forma a não poluir o sistema do usuário se usados apenas ocasionalmente.
 
 ### Usando `pip`
 
