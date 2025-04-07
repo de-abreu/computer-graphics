@@ -39,6 +39,7 @@ FRAGMENT_SHADER_SOURCE = """
 
 
 def main():
+    # Object initialization
     window = init_window(940, 1000, "Program")
     program = create_shader_program(VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE)
     glBindBuffer(GL_ARRAY_BUFFER, glGenBuffers(1))

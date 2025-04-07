@@ -16,21 +16,47 @@ from OpenGL.GL import (
 
 
 class Piece(Object):
+    """
+    A class representing a 3D chess piece, inheriting from the Object class.
+
+    Attributes:
+        color (tuple[float, float, float, float]): The RGBA color of the piece.
+        _loc_color (int): The location of the color uniform in the shader program.
+    """
+
     color: tuple[float, float, float, float]
     _loc_color: int
 
-    # Trigonometric formula to return the coordinate of a vertex at the edge of
-    # a cylinder
     @staticmethod
     def _vert_coordinate(
         angle: float, height: float, radius: float
     ) -> tuple[float, float, float]:
+        """
+        Calculates the coordinates of a vertex at the edge of a cylinder.
+
+        Args:
+            angle (float): The angle in radians for the vertex position.
+            height (float): The height of the vertex.
+            radius (float): The radius of the cylinder.
+
+        Returns:
+            tuple[float, float, float]: The (x, y, z) coordinates of the vertex.
+        """
         return (radius * cos(angle), height, radius * sin(angle))  # (x, y, z)
 
-    # Function to place vertices at the edges of a type's given shape
     def _set_vertices(
         self, silhouette: list[tuple[float, float]], sectors: int
     ) -> list[tuple[float, float, float]]:
+        """
+        Places vertices at the edges of a type's given shape based on its silhouette.
+
+        Args:
+            silhouette (list[tuple[float, float]]): A list of (radius, height) tuples defining the silhouette.
+            sectors (int): The number of sectors to divide the circular base.
+
+        Returns:
+            list[tuple[float, float, float]]: A list of vertices for the piece's geometry.
+        """
         step = tau / sectors
         coordinate = self._vert_coordinate
         radii, heights = [list(t) for t in zip(*silhouette)]
@@ -84,6 +110,17 @@ class Piece(Object):
         color: tuple[float, float, float],
         program: Any,
     ):
+        """
+        Initializes the Piece with its type, position, rotation, scale, color, and shader program.
+
+        Args:
+            type (str): The type of the chess piece (e.g., "pawn", "bishop", "queen").
+            position (tuple[float, float, float]): The initial position of the piece in 3D space.
+            rotation (tuple[float, float, float]): The initial rotation of the piece in degrees around the x, y, and z axes.
+            scale (float): The scale factor for the piece.
+            color (tuple[float, float, float]): The RGB color of the piece, where each component is in the range [0, 1].
+            program (Any): The shader program used for rendering the piece.
+        """
         sectors = 8
         # Coordinates of the type's silhouette, given in (radius, height). The base
         # is the same for all varieties of types.
@@ -107,6 +144,15 @@ class Piece(Object):
 
     @override
     def draw(self):
+        """
+        Prepares the piece for rendering by setting up the necessary OpenGL state.
+
+        This method calls the parent class's draw method to handle the basic drawing setup,
+        then sets the transformation matrix and color uniform for the piece. It iterates over
+        the vertices of the piece and issues draw calls to render the piece as triangles.
+
+        This method should be called within the rendering loop to display the piece on the screen.
+        """
         super().draw()
         glUniformMatrix4fv(self.loc, 1, GL_TRUE, self.transformation)
         glUniform4f(self._loc_color, *self.color)

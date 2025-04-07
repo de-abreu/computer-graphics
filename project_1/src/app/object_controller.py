@@ -11,6 +11,7 @@ from glfw import (
     KEY_A as A,
     KEY_D as D,
     KEY_F as F,
+    KEY_G as G,
     KEY_I as I,
     KEY_J as J,
     KEY_K as K,
@@ -32,17 +33,42 @@ from .objects.object import Object
 
 
 class ObjectController:
+    """
+    A class to control a list of 3D objects in a graphical window.
+
+    Attributes:
+        objects (list[Object]): A list of Object instances to be controlled.
+        step (float): The step size for movement, scaling, and rotation.
+        window (Any): The GLFW window instance for input handling.
+        i (int): The index of the currently controlled object.
+    """
+
     objects: list[Object]
     step: float
     window: Any
 
     def __init__(self, objects: list[Object], window: Any, step: float = 0.01):
+        """
+        Initializes the ObjectController with a list of objects, a window, and a step size.
+
+        Args:
+            objects (list[Object]): A list of Object instances to control.
+            window (Any): The GLFW window instance for input handling.
+            step (float, optional): The step size for movement, scaling, and rotation. Defaults to 0.01.
+        """
         self.objects = objects
         self.step = step
         self.window = window
         self.i = 0
 
     def handle_input(self):
+        """
+        Handles user input to control the currently selected object.
+
+        This method checks for key presses and updates the position, scale, and rotation
+        of the currently selected object based on the input. It also allows toggling
+        wireframe mode and switching between objects.
+        """
         o = self.objects[self.i]
         w = self.window
         step = self.step
@@ -73,9 +99,9 @@ class ObjectController:
         if get_key(w, K) == PRESS:
             o.rotation["x"] -= step
         if get_key(w, U) == PRESS:
-            o.rotation["y"] += step
-        if get_key(w, O) == PRESS:
             o.rotation["y"] -= step
+        if get_key(w, O) == PRESS:
+            o.rotation["y"] += step
         if get_key(w, J) == PRESS:
             o.rotation["z"] += step
         if get_key(w, L) == PRESS:
@@ -96,3 +122,5 @@ class ObjectController:
         # Switch object being controlled
         if get_key(w, T) == PRESS:
             self.i = (self.i + 1) % len(self.objects)
+        if get_key(w, G) == PRESS:
+            self.i = (self.i - 1) % len(self.objects)

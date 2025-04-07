@@ -15,8 +15,14 @@ from OpenGL.GL import (
 )
 
 
-# Custom dictionary that triggers a callback on setitem
 class TransformDict(dict[str, float]):
+    """
+    A custom dictionary that triggers a callback function whenever an item is set.
+
+    Attributes:
+        _on_change (Callable[[], None] | None): A callback function to be called on item change.
+    """
+
     _on_change: Callable[[], None] | None
 
     def __init__(
@@ -25,17 +31,42 @@ class TransformDict(dict[str, float]):
         on_change: Callable[[], None] | None = None,
         **kwargs: float,
     ) -> None:
+        """
+        Initializes the TransformDict with optional initial values and a callback.
+
+        Args:
+            *args: Initial key-value pairs as tuples or a mapping.
+            on_change (Callable[[], None], optional): A callback function to call on item change.
+            **kwargs: Additional key-value pairs.
+        """
         super().__init__(*args, **kwargs)
         self._on_change = on_change
 
     @override
     def __setitem__(self, key: str, value: float) -> None:
+        """
+        Sets the value for a key and triggers the on_change callback if defined.
+
+        Args:
+            key (str): The key to set.
+            value (float): The value to set for the key.
+        """
         super().__setitem__(key, value)
         if self._on_change:
             self._on_change()
 
     @override
     def update(self, *args: Any, **kwargs: float) -> None:
+        """
+        Updates the dictionary with key-value pairs from another mapping or iterable.
+
+        Args:
+            *args: A single mapping or iterable of key-value pairs.
+            **kwargs: Additional key-value pairs to update.
+
+        Raises:
+            TypeError: If more than one positional argument is provided.
+        """
         if len(args) > 1:
             raise TypeError(f"update expected at most 1 argument, got {len(args)}")
 
@@ -122,6 +153,14 @@ class Object:
         self.update()
 
     def update(self):
+        """
+        Updates the transformation matrix based on the current position, rotation, and scale.
+
+        This method calculates the transformation matrix by applying translation, rotation,
+        and scaling transformations in the correct order. The resulting transformation matrix
+        is stored in the `transformation` attribute, which can be used for rendering the object.
+        """
+
         def rotationMatrix(rotation: TransformDict, axis: str):
             c = cos(rotation[axis])
             s = sin(rotation[axis])
@@ -181,6 +220,16 @@ class Object:
         ).astype(float32)
 
     def draw(self):
+        """
+        Prepares the object for rendering by setting up the necessary OpenGL state.
+
+        This method retrieves the attribute location for the vertex data in the shader program,
+        enables the vertex attribute array, and specifies the layout of the vertex data. It also
+        uploads the vertex data to the GPU using a buffer.
+
+        This method should be called before rendering the object to ensure that the OpenGL context
+        is correctly set up for drawing the object.
+        """
         stride = self.vertices.strides[0]
         offset = ctypes.c_void_p(0)
 
