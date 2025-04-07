@@ -6,6 +6,8 @@ tabulerio](./snapshot_2025-04-06_20-03-00.png)
 Demonstração de um programa simples para renderização de objetos em 2D e 3D, em
 diferentes cores.
 
+> Autor: Guilherme de Abreu Barreto, nUSP: 12543033
+
 ## Para executar o programa
 
 ### Usando Nix Flakes (recomendado)
