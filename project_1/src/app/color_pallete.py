@@ -1,12 +1,23 @@
-# Reimmplementation of the Everforest Dark Soft colorscheme.
-# Source:
-# https://github.com/Gogh-Co/Gogh/blob/master/themes/Everforest%20Dark%20Soft.yml
-
 from dataclasses import dataclass, field
 
 
 @dataclass
 class Palette:
+    """
+    A class representing a color palette based on the Everforest Dark Soft colorscheme.
+
+    The color values are scaled to the range [0, 1] for use in graphical applications.
+
+    Attributes:
+        background (tuple[float, float, float]): The background color.
+        white (tuple[float, float, float]): The color white.
+        green (tuple[float, float, float]): The color green.
+        red (tuple[float, float, float]): The color red (darker, richer shade).
+        yellow (tuple[float, float, float]): The color yellow (deep golden shade).
+        blue (tuple[float, float, float]): The color blue (darker, bluer shade).
+        magenta (tuple[float, float, float]): The color magenta (deep plum shade).
+    """
+
     # Color values are scaled to [0, 1]
     background: tuple[float, float, float] = field(
         default_factory=lambda: (0x33 / 255, 0x3C / 255, 0x43 / 255)
