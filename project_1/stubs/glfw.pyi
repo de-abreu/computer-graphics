@@ -18,6 +18,7 @@ def get_key(window: Any, key: int) -> int: ...
 KEY_A: int
 KEY_D: int
 KEY_F: int
+KEY_G: int
 KEY_I: int
 KEY_J: int
 KEY_K: int
@@ -32,7 +33,6 @@ KEY_W: int
 KEY_X: int
 KEY_Y: int
 KEY_Z: int
-KEY_ESCAPE: int
 PRESS: int
 VISIBLE: int
 FALSE: int

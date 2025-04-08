@@ -43,6 +43,7 @@ class ObjectController:
         i (int): The index of the currently controlled object.
     """
 
+    i: int
     objects: list[Object]
     step: float
     window: Any
@@ -56,10 +57,10 @@ class ObjectController:
             window (Any): The GLFW window instance for input handling.
             step (float, optional): The step size for movement, scaling, and rotation. Defaults to 0.01.
         """
+        self.i = 0
         self.objects = objects
         self.step = step
         self.window = window
-        self.i = 0
 
     def handle_input(self):
         """

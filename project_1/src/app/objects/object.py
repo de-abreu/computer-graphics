@@ -175,6 +175,34 @@ class Object:
         self._scale = self._initial_scale
         self.update()
 
+    def _rotationMatrix(self, axis: str):
+        c = cos(self.rotation[axis])
+        s = sin(self.rotation[axis])
+        matrix = []
+        match axis:
+            case "x":
+                matrix = [
+                    [1.0, 0.0, 0.0, 0.0],
+                    [0.0, c, -s, 0.0],
+                    [0.0, s, c, 0.0],
+                    [0.0, 0.0, 0.0, 1.0],
+                ]
+            case "y":
+                matrix = [
+                    [c, 0.0, s, 0.0],
+                    [0.0, 1.0, 0.0, 0.0],
+                    [-s, 0.0, c, 0.0],
+                    [0.0, 0.0, 0.0, 1.0],
+                ]
+            case _:
+                matrix = [
+                    [c, -s, 0.0, 0.0],
+                    [s, c, 0.0, 0.0],
+                    [0.0, 0.0, 1.0, 0.0],
+                    [0.0, 0.0, 0.0, 1.0],
+                ]
+        return array(matrix, dtype=float32)
+
     def update(self):
         """
         Updates the transformation matrix based on the current position, rotation, and scale.
@@ -183,34 +211,6 @@ class Object:
         and scaling transformations in the correct order. The resulting transformation matrix
         is stored in the `transformation` attribute, which can be used for rendering the object.
         """
-
-        def rotationMatrix(rotation: TransformDict, axis: str):
-            c = cos(rotation[axis])
-            s = sin(rotation[axis])
-            matrix = []
-            match axis:
-                case "x":
-                    matrix = [
-                        [1.0, 0.0, 0.0, 0.0],
-                        [0.0, c, -s, 0.0],
-                        [0.0, s, c, 0.0],
-                        [0.0, 0.0, 0.0, 1.0],
-                    ]
-                case "y":
-                    matrix = [
-                        [c, 0.0, s, 0.0],
-                        [0.0, 1.0, 0.0, 0.0],
-                        [-s, 0.0, c, 0.0],
-                        [0.0, 0.0, 0.0, 1.0],
-                    ]
-                case _:
-                    matrix = [
-                        [c, -s, 0.0, 0.0],
-                        [s, c, 0.0, 0.0],
-                        [0.0, 0.0, 1.0, 0.0],
-                        [0.0, 0.0, 0.0, 1.0],
-                    ]
-            return array(matrix, dtype=float32)
 
         s = self.scale
         scale = array(
@@ -236,9 +236,9 @@ class Object:
 
         self.transformation = (
             translation
-            @ rotationMatrix(self.rotation, "z")
-            @ rotationMatrix(self.rotation, "y")
-            @ rotationMatrix(self.rotation, "x")
+            @ self._rotationMatrix("z")
+            @ self._rotationMatrix("y")
+            @ self._rotationMatrix("x")
             @ scale
         ).astype(float32)
 
