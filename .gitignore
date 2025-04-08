@@ -27,6 +27,7 @@ pyproject.toml
 .idea/
 *.swp
 *.swo
+.prettierrc.toml
 
 # Build and output directories
 bin/

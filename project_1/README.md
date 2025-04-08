@@ -1,7 +1,7 @@
 # Projeto 1
 
 ![Peças de xadrez de cores variadas, em posição de xeque-mate sobre um
-tabulerio](./snapshot_2025-04-06_20-03-00.png)
+tabulerio](imgs/snapshot_2025-04-06_20-03-00.png)
 
 Demonstração de um programa simples para renderização de objetos em 2D e 3D, em
 diferentes cores.
@@ -68,11 +68,11 @@ vistos em cena:
 - Rotação:
 
   - <kbd>i</kbd> rotaciona no sentido horário no eixo x;
-  - <kbd>k</kbd> rotaciona no sentido antihorário no eixo x;
+  - <kbd>k</kbd> rotaciona no sentido anti-horário no eixo x;
   - <kbd>u</kbd> rotaciona no sentido horário no eixo y;
-  - <kbd>o</kbd> rotaciona no sentido antihorário no eixo y;
+  - <kbd>o</kbd> rotaciona no sentido anti-horário no eixo y;
   - <kbd>l</kbd> rotaciona no sentido horário no eixo z;
-  - <kbd>j</kbd> rotaciona no sentido antihorário no eixo z;
+  - <kbd>j</kbd> rotaciona no sentido anti-horário no eixo z;
 
 - Reinicialização:
 
@@ -93,4 +93,4 @@ console, atualizada toda vez que ocorre uma mudança neste.
 
 ![Janela do tabuleiro e peças ladeada por um terminal. O terminal exibe uma
 tabela que descreve o atual estado dos objetos apresentados na cena em termos
-dos valores aplicados a transformações destes](./snapshot_2025-04-07_11-07-43.png)
+dos valores aplicados a transformações destes](imgs/snapshot_2025-04-07_11-07-43.png)
