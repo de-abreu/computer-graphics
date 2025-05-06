@@ -1,9 +1,7 @@
 {
   description = "Computer Graphics Development Environment";
 
-  inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/b75693fb46bfaf09e662d09ec076c5a162efa9f6";
-  };
+  inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-24.11";
 
   outputs = {
     self,
@@ -48,7 +46,6 @@
       buildInputs = allDeps;
       shellHook = ''
         echo "🚀 Welcome to the Computer Graphics dev environment!"
-        echo "📁 Run your project with: python src/main.py"
       '';
     };
 

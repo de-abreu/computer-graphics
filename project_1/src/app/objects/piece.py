@@ -4,7 +4,7 @@ from .silhouettes.bishop import BISHOP_SILHOUETTE
 from .silhouettes.king import KING_SILHOUETTE, KING_CROWN
 from .silhouettes.pawn import PAWN_SILHOUETTE
 from .silhouettes.queen import QUEEN_SILHOUETTE
-from typing import Any, override
+from typing import Any, final, override
 from OpenGL.GL import (
     GL_TRUE,
     GL_TRIANGLES,
@@ -15,6 +15,7 @@ from OpenGL.GL import (
 )
 
 
+@final
 class Piece(Object):
     """
     A class representing a 3D chess piece, inheriting from the Object class.
@@ -131,9 +132,13 @@ class Piece(Object):
             case "pawn":
                 shape = set_vertices(base_silhouette + PAWN_SILHOUETTE, sectors)
             case "bishop":
-                shape = set_vertices(base_silhouette + BISHOP_SILHOUETTE, sectors)
+                shape = set_vertices(
+                    base_silhouette + BISHOP_SILHOUETTE, sectors
+                )
             case "queen":
-                shape = set_vertices(base_silhouette + QUEEN_SILHOUETTE, sectors)
+                shape = set_vertices(
+                    base_silhouette + QUEEN_SILHOUETTE, sectors
+                )
             case _:
                 shape = set_vertices(base_silhouette + KING_SILHOUETTE, sectors)
                 shape += KING_CROWN

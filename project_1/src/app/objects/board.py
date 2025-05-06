@@ -1,5 +1,5 @@
 from .object import Object
-from typing import Any, override
+from typing import Any, final, override
 from OpenGL.GL import (
     GL_TRUE,
     GL_TRIANGLES,
@@ -10,6 +10,7 @@ from OpenGL.GL import (
 )
 
 
+@final
 class Board(Object):
     """
     A class representing a chessboard, inheriting from the Object class.
@@ -93,7 +94,9 @@ class Board(Object):
         This method should be called within the rendering loop to display the board on the screen.
         """
         super().draw()
-        glUniformMatrix4fv(self.loc_transformation, 1, GL_TRUE, self.transformation)
+        glUniformMatrix4fv(
+            self.loc_transformation, 1, GL_TRUE, self.transformation
+        )
         i = 0
         for square in range(0, len(self.vertices), 6):
             row = i // 8  # Integer division to get the row

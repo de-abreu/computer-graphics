@@ -1,5 +1,5 @@
 from copy import copy, deepcopy
-from typing import Any, Callable, override
+from typing import Any, Callable, final, override
 from collections.abc import Iterable, Mapping
 from glfw import ctypes
 from numpy import array, cos, float32, sin
@@ -16,6 +16,7 @@ from OpenGL.GL import (
 )
 
 
+@final
 class TransformDict(dict[str, float]):
     """
     A custom dictionary that triggers a callback function whenever an item is set.
@@ -69,7 +70,9 @@ class TransformDict(dict[str, float]):
             TypeError: If more than one positional argument is provided.
         """
         if len(args) > 1:
-            raise TypeError(f"update expected at most 1 argument, got {len(args)}")
+            raise TypeError(
+                f"update expected at most 1 argument, got {len(args)}"
+            )
 
         if args:
             other = args[0]
@@ -91,7 +94,9 @@ class TransformDict(dict[str, float]):
         new_dict._on_change = self._on_change
         return new_dict
 
-    def __deepcopy__(self, memo: dict[int, object] | None = None) -> "TransformDict":
+    def __deepcopy__(
+        self, memo: dict[int, object] | None = None
+    ) -> "TransformDict":
         if memo is None:
             memo = {}
         new_dict = TransformDict(self, on_change=copy(self._on_change))
@@ -264,5 +269,8 @@ class Object:
             self.program, "mat_transformation"
         )
         glBufferData(
-            GL_ARRAY_BUFFER, self.vertices.nbytes, self.vertices, GL_DYNAMIC_DRAW
+            GL_ARRAY_BUFFER,
+            self.vertices.nbytes,
+            self.vertices,
+            GL_DYNAMIC_DRAW,
         )
