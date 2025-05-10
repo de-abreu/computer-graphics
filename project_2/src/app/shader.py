@@ -16,8 +16,9 @@ from OpenGL.GL import (
     glLinkProgram,
     glDeleteShader,
     glUseProgram,
+    glUniform1f,
+    glUniform1i,
 )
-from OpenGL.GL.VERSION.GL_2_0 import glUniform1f, glUniform1i
 
 
 class Shader:

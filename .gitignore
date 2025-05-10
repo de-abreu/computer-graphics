@@ -1,26 +1,27 @@
 # Python
-__pycache__/
-*.py[cod]
 *$py.class
+*.egg
+*.egg-info/
+*.py[cod]
 *.so
 .Python
+.eggs/
+.installed.cfg
+MANIFEST
+__pycache__/
 build/
 develop-eggs/
 dist/
 downloads/
 eggs/
-.eggs/
 lib/
 lib64/
 parts/
+pyproject.toml
 sdist/
+stubs/
 var/
 wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-pyproject.toml
 
 # IDE specific
 .vscode/

@@ -1,34 +1,42 @@
+# pyright: reportCallIssue=false
 from app.camera import Camera
 from app.object import Object, ObjDescriptor
 from app.shader import Shader
 import ctypes
 import os
 from typing import Any
-from OpenGL.raw.GL.VERSION.GL_1_0 import (
+from OpenGL.GL import (
+    GL_ARRAY_BUFFER,
+    GL_BLEND,
     GL_COLOR_BUFFER_BIT,
     GL_DEPTH_BUFFER_BIT,
     GL_DEPTH_TEST,
+    GL_DONT_CARE,
+    GL_FLOAT,
+    GL_LINE_SMOOTH,
+    GL_LINE_SMOOTH_HINT,
+    GL_ONE_MINUS_SRC_ALPHA,
+    GL_SRC_ALPHA,
+    GL_STATIC_DRAW,
+    GL_TEXTURE_2D,
     GL_TRIANGLES as TRIANGLES,
+    GL_TRUE as TRUE,
+    glBindBuffer,
+    glBindTexture,
+    glBlendFunc,
+    glBufferData,
     glClear,
     glClearColor,
+    glDrawArrays,
     glEnable,
-)
-from OpenGL.raw.GL.VERSION.GL_1_1 import glDrawArrays
-from OpenGL.raw.GL.VERSION.GL_1_5 import (
-    GL_ARRAY_BUFFER,
-    GL_STATIC_DRAW,
-    glBindBuffer,
-    glBufferData,
-    glGenBuffers,
-)
-from OpenGL.raw.GL.VERSION.GL_2_0 import (
     glEnableVertexAttribArray,
+    glGenBuffers,
     glGetAttribLocation,
     glGetUniformLocation,
+    glHint,
     glUniformMatrix4fv,
     glVertexAttribPointer,
 )
-from OpenGL.raw.GL._types import GL_FLOAT, GL_TRUE as TRUE
 from glfw import (
     get_window_size,
     set_window_user_pointer,
@@ -50,6 +58,11 @@ class Scene:
     ) -> None:
         shader = Shader("src/shaders/vertex.vs", "src/shaders/fragments.fs")
         shader.use()
+        glEnable(GL_TEXTURE_2D)
+        glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE)
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        glEnable(GL_LINE_SMOOTH)
         width, height = get_window_size(window)
         vertices_list: list[tuple[float, float, float]] = []
         texture_coord: list[tuple[float, float]] = []
@@ -101,6 +114,7 @@ class Scene:
             mat = obj.transformation
             loc = glGetUniformLocation(self.program, "model")
             glUniformMatrix4fv(loc, 1, TRUE, mat)
+            glBindTexture(GL_TEXTURE_2D, obj.id)
             glDrawArrays(TRIANGLES, obj.initial_vertex, obj.vertices_count)
         glUniformMatrix4fv(
             glGetUniformLocation(self.program, "view"),

@@ -14,7 +14,10 @@
     pythonEnv = pkgs.python3.withPackages (ps:
       with ps; [
         glfw
+        jupyter
         numpy
+        mypy
+        pyglm
         pyopengl
         tabulate
       ]);

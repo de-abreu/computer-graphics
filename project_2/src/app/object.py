@@ -4,7 +4,7 @@ from OpenGL.GL.images import glTexImage2D
 from OpenGL.constants import GL_UNSIGNED_BYTE
 from PIL import Image
 from typing import TypedDict, final
-from OpenGL.GL.VERSION.GL_1_0 import (
+from OpenGL.GL import (
     GL_LINEAR,
     GL_REPEAT,
     GL_RGB,
@@ -14,8 +14,8 @@ from OpenGL.GL.VERSION.GL_1_0 import (
     GL_TEXTURE_WRAP_S,
     GL_TEXTURE_WRAP_T,
     glTexParameteri,
+    glBindTexture,
 )
-from OpenGL.GL.VERSION.GL_1_1 import glBindTexture
 from numpy import array, cos, float32, sin
 from numpy.typing import NDArray
 
@@ -25,7 +25,7 @@ class ObjDescriptor:
     def __init__(
         self,
         model_name: str,
-        initial_position: tuple[float, float, float] = (0.0, 0.0, -0.5),
+        initial_position: tuple[float, float, float] = (0.0, 0.0, -20.0),
         initial_rotation: tuple[float, float, float] = (0.0, 0.0, 0.0),
         initial_scale: float = 1.0,
     ):

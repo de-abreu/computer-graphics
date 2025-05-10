@@ -1,6 +1,5 @@
 from app.scene import Scene
 from typing import Any
-from OpenGL.raw.GL.VERSION.GL_1_0 import glViewport
 from OpenGL.GL import (
     GL_FILL,
     GL_FRONT_AND_BACK,
@@ -8,6 +7,7 @@ from OpenGL.GL import (
     GL_POLYGON_MODE,
     glGetInteger,
     glPolygonMode,
+    glViewport,
 )
 from glfw import (
     CURSOR,
@@ -38,6 +38,7 @@ from glfw import (
     KEY_Z as Z,
     KEY_ESCAPE as ESC,
     PRESS,
+    REPEAT,
     RAW_MOUSE_MOTION,
     TRUE,
     get_window_user_pointer,
@@ -58,77 +59,74 @@ def keyboard_callback(
     i = scene.index
     o = scene.objects[i]
     c = scene.camera
-    step = 0.1
-
-    if action != PRESS:
-        return
+    step = 0.2
 
     # INFO: Camera position
 
     # Move forwards and backwards
-    if key == W:
+    if key == W and action in (PRESS, REPEAT):
         _ = c.move(step, "z")
-    if key == S:
+    if key == S and action in (PRESS, REPEAT):
         _ = c.move(-step, "z")
 
-    # Pan: horizontal axis as a cross product of other axis
-    if key == A:
+    # Pan
+    if key == A and action in (PRESS, REPEAT):
         _ = c.move(step, "x")
-    if key == D:
+    if key == D and action in (PRESS, REPEAT):
         _ = c.move(-step, "x")
 
     # Tilt
-    if key == Q:
+    if key == Q and action in (PRESS, REPEAT):
         _ = c.move(step, "y")
-    if key == E:
+    if key == E and action in (PRESS, REPEAT):
         _ = c.move(-step, "y")
 
     # INFO: Selected object controls
 
     # Move away/closer
-    if key == T:
+    if key == T and action in (PRESS, REPEAT):
         o.position["z"] -= step
-    if key == G:
+    if key == G and action in (PRESS, REPEAT):
         o.position["z"] += step
 
     # Move horizontally
-    if key == F:
+    if key == F and action in (PRESS, REPEAT):
         o.position["x"] -= step
-    if key == H:
+    if key == H and action in (PRESS, REPEAT):
         o.position["x"] += step
 
     # Move vertically
-    if key == R:
+    if key == R and action in (PRESS, REPEAT):
         o.position["y"] += step
-    if key == Y:
+    if key == Y and action in (PRESS, REPEAT):
         o.position["y"] -= step
 
-    # Yaw
-    if key == L:
-        o.rotation["x"] += step
-    if key == J:
-        o.rotation["x"] -= step
-
-    # Pitch
-    if key == I:
-        o.rotation["y"] -= step
-    if key == K:
-        o.rotation["y"] += step
-
     # Roll
-    if key == U:
+    if key == U and action in (PRESS, REPEAT):
         o.rotation["z"] += step
-    if key == O:
+    if key == O and action in (PRESS, REPEAT):
         o.rotation["z"] -= step
 
+    # Pitch
+    if key == I and action in (PRESS, REPEAT):
+        o.rotation["x"] -= step
+    if key == K and action in (PRESS, REPEAT):
+        o.rotation["x"] += step
+
+    # Yaw
+    if key == L and action in (PRESS, REPEAT):
+        o.rotation["y"] += step
+    if key == J and action in (PRESS, REPEAT):
+        o.rotation["y"] -= step
+
     # Scale
-    if key == Z:
+    if key == Z and action in (PRESS, REPEAT):
         o.scale -= step
-    if key == X:
+    if key == X and action in (PRESS, REPEAT):
         o.scale += step
 
     # Toggle wireframe mode
-    if key == P:
+    if key == P and action == PRESS:
         current_mode = glGetInteger(GL_POLYGON_MODE)[0]
         if current_mode == GL_FILL:
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
@@ -136,17 +134,17 @@ def keyboard_callback(
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
     # Switch object being controlled
-    if key == C:
+    if key == C and action == PRESS:
         scene.index = (scene.index + 1) % len(scene.objects)
-    if key == V:
+    if key == V and action == PRESS:
         scene.index = (scene.index - 1) % len(scene.objects)
 
-    # Reset scene
-    if key == B:
+    # Reset object
+    if key == B and action == PRESS:
         _ = o.reset()
 
     # Close window
-    if key == ESC:
+    if key == ESC and action == PRESS:
         set_window_should_close(window, True)
 
 

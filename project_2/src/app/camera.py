@@ -16,7 +16,7 @@ class Camera:
     _pos: vec = vec(0.0, 0.0, -3.0)
     _front: vec = vec(0.0, 0.0, 0.0)
     _up: vec = vec(0.0, 1.0, 0.0)
-    _mouse_sensitivity: float = 0.1
+    _mouse_sensitivity: float = 1.0
     _fov: float = 45.0
     _pitch: float = 0.0
     _yaw: float = -90.0

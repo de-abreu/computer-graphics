@@ -1,6 +1,6 @@
 from glfw import wait_events, terminate, window_should_close
 from app.controller import init_controller
-from app.object import ObjDescriptor
+from app.object import ObjDescriptor as desc
 from app.scene import Scene
 from app.window import init_window
 
@@ -8,7 +8,7 @@ from app.window import init_window
 def main():
     # Application initialization
     window = init_window(940, 1000, "Program")
-    scene = Scene(window, [ObjDescriptor("Cabin")])
+    scene = Scene(window, [desc("Cabin")])
     init_controller(window)
 
     # Main loop
