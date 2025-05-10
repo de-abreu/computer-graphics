@@ -1,8 +1,7 @@
-# ruff: noqa: F821
-# pyright: reportUndefinedVariable=false, reportCallIssue=false
 from app.camera import Camera
 from app.object import Object, ObjDescriptor
 from app.shader import Shader
+import ctypes
 import os
 from typing import Any
 from OpenGL.raw.GL.VERSION.GL_1_0 import (
@@ -36,8 +35,7 @@ from glfw import (
     show_window,
     swap_buffers,
 )
-from numpy import float32, zeros
-from numpy.typing import NDArray
+from numpy import array, float32
 from tabulate import tabulate
 
 
@@ -53,7 +51,8 @@ class Scene:
         shader = Shader("src/shaders/vertex.vs", "src/shaders/fragments.fs")
         shader.use()
         width, height = get_window_size(window)
-        vertices_list, texture_coord = [], []
+        vertices_list: list[tuple[float, float, float]] = []
+        texture_coord: list[tuple[float, float]] = []
         self.camera = Camera(width, height)
         self.program = shader.getProgram()
         for i in range(len(obj_descriptors)):
@@ -66,7 +65,6 @@ class Scene:
                 )
             )
 
-        # Generate buffers to store vertices and texture coordinates
         buffers = glGenBuffers(2)
         self._upload_vertices(vertices_list, buffers)
         self._upload_textures(texture_coord, buffers)
@@ -74,15 +72,10 @@ class Scene:
         show_window(window)
         glEnable(GL_DEPTH_TEST)
 
-    @staticmethod
-    def _to_position_array(list: list[float], tuples: int) -> NDArray[float32]:
-        array = zeros(len(list), [("position", float32, tuples)])
-        array["position"] = list
-        return array
-
-    def _upload_vertices(self, vertices_list: list[float], buffer: Any) -> None:
-        vertices = Scene._to_position_array(vertices_list, 3)
-
+    def _upload_vertices(
+        self, vertices_list: list[tuple[float, float, float]], buffer: Any
+    ) -> None:
+        vertices = array(vertices_list, dtype=float32)
         glBindBuffer(GL_ARRAY_BUFFER, buffer[0])
         glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
         stride, offset = vertices.strides[0], ctypes.c_void_p(0)
@@ -90,12 +83,13 @@ class Scene:
         glEnableVertexAttribArray(loc_vertices)
         glVertexAttribPointer(loc_vertices, 3, GL_FLOAT, False, stride, offset)
 
-    def _upload_textures(self, texture_coord: list[float], buffer: Any) -> None:
-        textures = Scene._to_position_array(texture_coord, 2)
-
+    def _upload_textures(
+        self, texture_coord: list[tuple[float, float]], buffer: Any
+    ) -> None:
+        textures = array(texture_coord, dtype=float32)
         glBindBuffer(GL_ARRAY_BUFFER, buffer[1])
         glBufferData(GL_ARRAY_BUFFER, textures.nbytes, textures, GL_STATIC_DRAW)
-        stride, offset = vertices.strides[0], ctypes.c_void_p(0)
+        stride, offset = textures.strides[0], ctypes.c_void_p(0)
         loc_textures = glGetAttribLocation(self.program, "texture_coord")
         glEnableVertexAttribArray(loc_textures)
         glVertexAttribPointer(loc_textures, 2, GL_FLOAT, False, stride, offset)

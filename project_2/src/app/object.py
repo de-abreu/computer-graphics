@@ -25,7 +25,7 @@ class ObjDescriptor:
     def __init__(
         self,
         model_name: str,
-        initial_position: tuple[float, float, float] = (0.0, 0.0, -20.0),
+        initial_position: tuple[float, float, float] = (0.0, 0.0, -0.5),
         initial_rotation: tuple[float, float, float] = (0.0, 0.0, 0.0),
         initial_scale: float = 1.0,
     ):
@@ -36,8 +36,8 @@ class ObjDescriptor:
 
 
 class Model(TypedDict):
-    vertices: list[float]
-    texture_coord: list[float]
+    vertices: list[tuple[float, float, float]]
+    texture_coord: list[tuple[float, float]]
     faces: list[tuple[list[int], list[int], str | None]]
 
 
@@ -58,8 +58,8 @@ class Object:
         self,
         id: int,
         description: ObjDescriptor,
-        vertices: list[float],
-        texture_coord: list[float],
+        vertices: list[tuple[float, float, float]],
+        texture_coord: list[tuple[float, float]],
     ):
         self._id = id
         self._name = description.model_name
@@ -138,9 +138,13 @@ class Object:
             values = line.split()
             match values[0]:
                 case "v":  # recovering vertices
-                    model["vertices"] += [float(x) for x in values[1:]]
+                    model["vertices"].append(
+                        (float(values[1]), float(values[2]), float(values[3]))
+                    )
                 case "vt":  # recovering texture coordinates
-                    model["texture_coord"] += [float(x) for x in values[1:]]
+                    model["texture_coord"].append(
+                        (float(values[1]), float(values[2]))
+                    )
                 case "f":
                     face: list[int] = []
                     face_texture: list[int] = []
@@ -164,7 +168,7 @@ class Object:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        img = Image.open(f"src/models/{self._name}/texture.png")
+        img = Image.open(f"src/objects/{self._name}/texture.png")
         width = img.size[0]
         height = img.size[1]
         img_data = img.tobytes("raw", "RGB", 0, -1)
@@ -191,8 +195,8 @@ class Object:
 
     def _load_object(
         self,
-        vertices_list: list[float],
-        texture_coord_list: list[float],
+        vertices_list: list[tuple[float, float, float]],
+        texture_coord_list: list[tuple[float, float]],
     ) -> tuple[int, int]:
         model = self._load_model()
         start = len(vertices_list)

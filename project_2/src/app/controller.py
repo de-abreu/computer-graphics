@@ -1,4 +1,3 @@
-from app.camera import Direction
 from app.scene import Scene
 from typing import Any
 from OpenGL.raw.GL.VERSION.GL_1_0 import glViewport
@@ -52,141 +51,138 @@ from glfw import (
 )
 
 
-class Controller:
-    def __init__(self, window: Any, scene: Scene):
-        # INFO: Setup input mode, see: https://www.glfw.org/docs/3.3/input_guide.html
-        set_input_mode(window, CURSOR, CURSOR_DISABLED)
-        if raw_mouse_motion_supported():
-            set_input_mode(window, RAW_MOUSE_MOTION, TRUE)
+def keyboard_callback(
+    window: Any, key: int, _scancode: int, action: int, _mods: int
+):
+    scene: Scene = get_window_user_pointer(window)
+    i = scene.index
+    o = scene.objects[i]
+    c = scene.camera
+    step = 0.1
 
-        set_key_callback(window, Controller._keyboard_callback)
-        set_framebuffer_size_callback(window, Controller._framebuffer_callback)
-        set_cursor_pos_callback(window, Controller._mouse_callback)
-        set_scroll_callback(window, Controller._scroll_callback)
+    if action != PRESS:
+        return
 
-    @staticmethod
-    def _keyboard_callback(
-        window: Any, key: int, _scancode: int, action: int, _mods: int
-    ):
-        scene: Scene = get_window_user_pointer(window)
-        i = scene.index
-        o = scene.objects[i]
-        c = scene.camera
-        step = 0.1
+    # INFO: Camera position
 
-        if action != PRESS:
-            return
+    # Move forwards and backwards
+    if key == W:
+        _ = c.move(step, "z")
+    if key == S:
+        _ = c.move(-step, "z")
 
-        # INFO: Camera position
+    # Pan: horizontal axis as a cross product of other axis
+    if key == A:
+        _ = c.move(step, "x")
+    if key == D:
+        _ = c.move(-step, "x")
 
-        # Move forwards and backwards
-        if key == W:
-            _ = c.move(step, Direction.front)
-        if key == S:
-            _ = c.move(-step, Direction.front)
+    # Tilt
+    if key == Q:
+        _ = c.move(step, "y")
+    if key == E:
+        _ = c.move(-step, "y")
 
-        # Pan: horizontal axis as a cross product of other axis
-        if key == A:
-            _ = c.move(step, Direction.side)
-        if key == D:
-            _ = c.move(-step, Direction.side)
+    # INFO: Selected object controls
 
-        # Tilt
-        if key == Q:
-            _ = c.move(step, Direction.up)
-        if key == E:
-            _ = c.move(-step, Direction.up)
+    # Move away/closer
+    if key == T:
+        o.position["z"] -= step
+    if key == G:
+        o.position["z"] += step
 
-        # INFO: Selected object controls
+    # Move horizontally
+    if key == F:
+        o.position["x"] -= step
+    if key == H:
+        o.position["x"] += step
 
-        # Move away/closer
-        if key == T:
-            o.position["z"] -= step
-        if key == G:
-            o.position["z"] += step
+    # Move vertically
+    if key == R:
+        o.position["y"] += step
+    if key == Y:
+        o.position["y"] -= step
 
-        # Move horizontally
-        if key == F:
-            o.position["x"] -= step
-        if key == H:
-            o.position["x"] += step
+    # Yaw
+    if key == L:
+        o.rotation["x"] += step
+    if key == J:
+        o.rotation["x"] -= step
 
-        # Move vertically
-        if key == R:
-            o.position["y"] += step
-        if key == Y:
-            o.position["y"] -= step
+    # Pitch
+    if key == I:
+        o.rotation["y"] -= step
+    if key == K:
+        o.rotation["y"] += step
 
-        # Yaw
-        if key == L:
-            o.rotation["x"] += step
-        if key == J:
-            o.rotation["x"] -= step
+    # Roll
+    if key == U:
+        o.rotation["z"] += step
+    if key == O:
+        o.rotation["z"] -= step
 
-        # Pitch
-        if key == I:
-            o.rotation["y"] -= step
-        if key == K:
-            o.rotation["y"] += step
+    # Scale
+    if key == Z:
+        o.scale -= step
+    if key == X:
+        o.scale += step
 
-        # Roll
-        if key == U:
-            o.rotation["z"] += step
-        if key == O:
-            o.rotation["z"] -= step
+    # Toggle wireframe mode
+    if key == P:
+        current_mode = glGetInteger(GL_POLYGON_MODE)[0]
+        if current_mode == GL_FILL:
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+        else:
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
-        # Scale
-        if key == Z:
-            o.scale -= step
-        if key == X:
-            o.scale += step
+    # Switch object being controlled
+    if key == C:
+        scene.index = (scene.index + 1) % len(scene.objects)
+    if key == V:
+        scene.index = (scene.index - 1) % len(scene.objects)
 
-        # Toggle wireframe mode
-        if key == P:
-            current_mode = glGetInteger(GL_POLYGON_MODE)[0]
-            if current_mode == GL_FILL:
-                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
-            else:
-                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
+    # Reset scene
+    if key == B:
+        _ = o.reset()
 
-        # Switch object being controlled
-        if key == C:
-            scene.index = (scene.index + 1) % len(scene.objects)
-        if key == V:
-            scene.index = (scene.index - 1) % len(scene.objects)
+    # Close window
+    if key == ESC:
+        set_window_should_close(window, True)
 
-        # Reset scene
-        if key == B:
-            _ = o.reset()
 
-        # Close window
-        if key == ESC:
-            set_window_should_close(window, True)
+def framebuffer_callback(_window: Any, width: int, height: int) -> None:
+    glViewport(0, 0, width, height)
 
-    @staticmethod
-    def _framebuffer_callback(_window: Any, width: int, height: int) -> None:
-        glViewport(0, 0, width, height)
 
-    @staticmethod
-    def _mouse_callback(window: Any, x_pos: float, y_pos: float) -> None:
-        scene: Scene = get_window_user_pointer(window)
-        camera = scene.camera
+def mouse_callback(window: Any, x_pos: float, y_pos: float) -> None:
+    scene: Scene = get_window_user_pointer(window)
+    camera = scene.camera
 
-        if camera.first_mouse:
-            camera.last_x = x_pos
-            camera.last_y = y_pos
-            camera.first_mouse = False
-
-        x_offset = x_pos - camera.last_x
-        # The following is reversed since y-coordinates go from bottom to top
-        y_offset = camera.last_y - y_pos
+    if camera.first_mouse:
         camera.last_x = x_pos
         camera.last_y = y_pos
-        _ = camera.process_mouse_movement(x_offset, y_offset)
+        camera.first_mouse = False
 
-    @staticmethod
-    def _scroll_callback(
-        window: Any, _x_offset: float, y_offset: float
-    ) -> None:
-        scene: Scene = get_window_user_pointer(window)
-        _ = scene.camera.process_scroll_movement(y_offset)
+    x_offset = x_pos - camera.last_x
+    # The following is reversed since y-coordinates go from bottom to top
+    y_offset = camera.last_y - y_pos
+    camera.last_x = x_pos
+    camera.last_y = y_pos
+    _ = camera.process_mouse_movement(x_offset, y_offset)
+
+
+def scroll_callback(window: Any, _x_offset: float, y_offset: float) -> None:
+    scene: Scene = get_window_user_pointer(window)
+    _ = scene.camera.process_scroll_movement(y_offset)
+
+
+def init_controller(window: Any):
+    # INFO: Setup input mode, see: https://www.glfw.org/docs/3.3/input_guide.html
+    set_input_mode(window, CURSOR, CURSOR_DISABLED)
+    if raw_mouse_motion_supported():
+        set_input_mode(window, RAW_MOUSE_MOTION, TRUE)
+
+    set_key_callback(window, keyboard_callback)
+    set_framebuffer_size_callback(window, framebuffer_callback)
+    set_cursor_pos_callback(window, mouse_callback)
+    set_scroll_callback(window, scroll_callback)

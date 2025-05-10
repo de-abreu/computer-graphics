@@ -1,4 +1,3 @@
-from enum import Enum
 from glm import (
     cross,
     lookAt,
@@ -12,22 +11,20 @@ from glm import (
 from numpy import array, float32
 from numpy.typing import NDArray
 
-Direction = Enum("Direction", ["front", "side", "up"])
-
 
 class Camera:
     _pos: vec = vec(0.0, 0.0, -3.0)
     _front: vec = vec(0.0, 0.0, 0.0)
     _up: vec = vec(0.0, 1.0, 0.0)
-    _first_mouse: bool = True
-    _fov: float = 45.0
-    _last_x: float = 0.0
-    _last_y: float = 0.0
     _mouse_sensitivity: float = 0.1
+    _fov: float = 45.0
     _pitch: float = 0.0
     _yaw: float = -90.0
     _window_width: int
     _window_height: int
+    first_mouse: bool = True
+    last_x: float = 0.0
+    last_y: float = 0.0
 
     def __init__(self, window_width: int, window_height: int) -> None:
         self._window_width = window_width
@@ -47,20 +44,8 @@ class Camera:
         return self._up
 
     @property
-    def first_mouse(self) -> bool:
-        return self._first_mouse
-
-    @property
     def fov(self) -> float:
         return self._fov
-
-    @property
-    def last_x(self) -> float:
-        return self._last_x
-
-    @property
-    def last_y(self) -> float:
-        return self._last_y
 
     @property
     def mouse_sensitivity(self) -> float:
@@ -74,11 +59,11 @@ class Camera:
     def yaw(self) -> float:
         return self._yaw
 
-    def move(self, step: float, direction: Direction) -> None:
+    def move(self, step: float, direction: str) -> None:
         match direction:
-            case Direction.front:
+            case "z":
                 self._pos += step * self.front
-            case Direction.side:
+            case "x":
                 self._pos += step * normalize(cross(self.front, self.up))
             case _:
                 self._pos += step * self.up
