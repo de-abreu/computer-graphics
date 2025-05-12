@@ -23,6 +23,10 @@ stubs/
 var/
 wheels/
 
+# #3D models and textures
+
+src/objects/
+
 # IDE specific
 .vscode/
 .idea/
