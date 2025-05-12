@@ -6,7 +6,8 @@ from app.window import init_window
 
 
 def main():
-    # Application initialization
+    # INFO: Application initialization. List the models to use in the following
+    # format, and add the necessary folders and files as described in the README:
     window = init_window(940, 1000, "Program")
     scene = Scene(
         window,

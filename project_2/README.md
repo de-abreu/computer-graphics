@@ -111,6 +111,9 @@ seguinte exemplo:
 
 ```
 
+Depois, altere o arquivo `main.py` de maneira a adicionar seus próprios modelos,
+alterando os valores preexistentes.
+
 ## 🕹️ Controles Interativos
 
 ### ⌨️ Teclado
