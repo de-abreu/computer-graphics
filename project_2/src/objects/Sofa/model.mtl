@@ -1,0 +1,12 @@
+# Blender 4.2.3 LTS MTL File: '8tlocrt.blend1'
+# www.blender.org
+
+newmtl bed_main_color
+Ns 35.555550
+Ka 1.000000 1.000000 1.000000
+Ks 0.350000 0.350000 0.350000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd flou_gaudi__difuse6.jpg

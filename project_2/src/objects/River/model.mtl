@@ -1,0 +1,12 @@
+# Blender 4.2.3 LTS MTL File: 'Low_Poly_Forest.blend'
+# www.blender.org
+
+newmtl Blue
+Ns 519.080566
+Ka 1.000000 1.000000 1.000000
+Kd 0.036838 0.164609 0.800000
+Ks 0.255906 0.255906 0.255906
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2

@@ -1,3 +1,4 @@
+from glob import glob
 from app.transform_dict import TransformDict
 from copy import deepcopy
 from OpenGL.GL.images import glTexImage2D
@@ -22,6 +23,21 @@ from numpy.typing import NDArray
 
 @final
 class ObjDescriptor:
+    """
+    A descriptor class for object properties.
+
+    Attributes
+    ----------
+    model_name : str
+        The name of the 3D model, must match a folder name under src/objects.
+    initial_position : tuple[float, float, float]
+        The initial position of the object in 3D space.
+    initial_rotation : tuple[float, float, float]
+        The initial rotation of the object in radians.
+    initial_scale : float
+        The initial scale of the object.
+    """
+
     def __init__(
         self,
         model_name: str,
@@ -36,12 +52,54 @@ class ObjDescriptor:
 
 
 class Model(TypedDict):
+    """
+    A typed dictionary representing a 3D model.
+
+    Attributes
+    ----------
+    vertices : list[tuple[float, float, float]]
+        The vertices of the model.
+    texture_coord : list[tuple[float, float]]
+        The texture coordinates of the model.
+    faces : list[tuple[list[int], list[int], str | None]]
+        The faces of the model, including vertex indices, texture indices, and material names.
+    """
+
     vertices: list[tuple[float, float, float]]
     texture_coord: list[tuple[float, float]]
     faces: list[tuple[list[int], list[int], str | None]]
 
 
 class Object:
+    """
+    A class to represent a 3D object in the scene.
+
+    Attributes
+    ----------
+    _name : str
+        The name of the object.
+    _id : int
+        The unique identifier of the object.
+    _initial_vertex : int
+        The starting index of the object's vertices in the global vertex list.
+    _vertices_count : int
+        The number of vertices in the object.
+    _initial_position : TransformDict
+        The initial position of the object.
+    _initial_rotation : TransformDict
+        The initial rotation of the object.
+    _initial_scale : float
+        The initial scale of the object.
+    _position : TransformDict
+        The current position of the object.
+    _rotation : TransformDict
+        The current rotation of the object.
+    _scale : float
+        The current scale of the object.
+    _transformation : NDArray[float32]
+        The transformation matrix of the object.
+    """
+
     _name: str
     _id: int
     _initial_vertex: int
@@ -129,6 +187,18 @@ class Object:
         self.update()
 
     def _load_model(self) -> Model:
+        """
+        Load the 3D model from an OBJ file.
+
+        Returns
+        -------
+        Model
+            A dictionary containing the vertices, texture coordinates, and faces of the model.
+
+        Notes
+        -----
+        The OBJ file is expected to be in the `src/objects/{model_name}/model.obj` path.
+        """
         model: Model = {"vertices": [], "texture_coord": [], "faces": []}
         material: str | None = None
 
@@ -136,6 +206,8 @@ class Object:
             if line.startswith("#"):
                 continue
             values = line.split()
+            if not values:
+                continue
             match values[0]:
                 case "v":  # recovering vertices
                     model["vertices"].append(
@@ -163,12 +235,19 @@ class Object:
         return model
 
     def _load_texture(self):
+        """
+        Load and bind the texture for the object.
+
+        Notes
+        -----
+        The texture file is expected to be in the `src/objects/{model_name}/texture.*` path.
+        """
         glBindTexture(GL_TEXTURE_2D, self._id)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        img = Image.open(f"src/objects/{self._name}/texture.png")
+        img = Image.open(glob(f"src/objects/{self._name}/texture.*")[0])
         width = img.size[0]
         height = img.size[1]
         img_data = img.tobytes("raw", "RGB", 0, -1)
@@ -186,8 +265,19 @@ class Object:
 
     @staticmethod
     def _triangulate_face(face: list[int]) -> list[int]:
-        """Apply fan triangulation to normalize a face of an object into
-        a set of triangles"""
+        """
+        Convert a face into a set of triangles using fan triangulation.
+
+        Parameters
+        ----------
+        face : list[int]
+            The indices of the vertices forming the face.
+
+        Returns
+        -------
+        list[int]
+            The indices of the vertices forming the triangulated face.
+        """
         triangulated_face: list[int] = []
         for i in range(1, len(face) - 1):
             triangulated_face.extend([face[0], face[i], face[i + 1]])
@@ -198,6 +288,21 @@ class Object:
         vertices_list: list[tuple[float, float, float]],
         texture_coord_list: list[tuple[float, float]],
     ) -> tuple[int, int]:
+        """
+        Load the object's vertices and texture coordinates into the global lists.
+
+        Parameters
+        ----------
+        vertices_list : list[tuple[float, float, float]]
+            The global list of vertices.
+        texture_coord_list : list[tuple[float, float]]
+            The global list of texture coordinates.
+
+        Returns
+        -------
+        tuple[int, int]
+            The starting index and count of the object's vertices in the global list.
+        """
         model = self._load_model()
         start = len(vertices_list)
 
@@ -213,12 +318,28 @@ class Object:
         return start, len(vertices_list) - start
 
     def reset(self) -> None:
+        """
+        Reset the object to its initial position, rotation, and scale.
+        """
         self._position = deepcopy(self._initial_position)
         self._rotation = deepcopy(self._initial_rotation)
         self._scale = self._initial_scale
         self.update()
 
     def _rotationMatrix(self, axis: str) -> NDArray[float32]:
+        """
+        Generate a rotation matrix for the specified axis.
+
+        Parameters
+        ----------
+        axis : str
+            The axis of rotation ('x', 'y', or 'z').
+
+        Returns
+        -------
+        NDArray[float32]
+            The 4x4 rotation matrix.
+        """
         c = cos(self.rotation[axis])
         s = sin(self.rotation[axis])
         match axis:
@@ -246,6 +367,9 @@ class Object:
         return array(matrix, dtype=float32)
 
     def update(self):
+        """
+        Update the object's transformation matrix based on its current position, rotation, and scale.
+        """
         s = self.scale
         scale = array(
             [

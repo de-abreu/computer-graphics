@@ -11,6 +11,38 @@ from glfw import (
 
 
 def init_window(width: int, height: int, title: str) -> Any:
+    """
+    Initialize a GLFW window with the specified dimensions and title.
+
+    Parameters
+    ----------
+    width : int
+        The width of the window in pixels.
+    height : int
+        The height of the window in pixels.
+    title : str
+        The title to display in the window's title bar.
+
+    Returns
+    -------
+    Any
+        The GLFW window object.
+
+    Raises
+    ------
+    Exception
+        If GLFW initialization fails.
+    RuntimeError
+        If window creation fails.
+
+    Notes
+    -----
+    This function:
+    1. Initializes GLFW
+    2. Creates an invisible window (initially hidden)
+    3. Sets the window's OpenGL context as current
+    4. Returns the window handle for further operations
+    """
     if not init():
         raise Exception("GLFW initialization failed")
     window_hint(VISIBLE, FALSE)

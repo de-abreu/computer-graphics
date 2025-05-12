@@ -41,7 +41,9 @@ FRAGMENT_SHADER_SOURCE = """
 def main():
     # Object initialization
     window = init_window(940, 1000, "Program")
-    program = create_shader_program(VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE)
+    program = create_shader_program(
+        VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE
+    )
     glBindBuffer(GL_ARRAY_BUFFER, glGenBuffers(1))
     palette = Palette()
     objects: list[Object] = [
@@ -92,14 +94,13 @@ def main():
 
     # Main loop
     while not window_should_close(window):
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-        glClearColor(*palette.background, 1.0)
-
         controller.handle_input()
         logger.log(controller.i)
         for obj in objects:
             obj.draw()
         sleep(1.0 / 30)  # 30 FPS target
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        glClearColor(*palette.background, 1.0)
         swap_buffers(window)
         poll_events()
 

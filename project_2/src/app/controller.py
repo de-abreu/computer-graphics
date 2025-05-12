@@ -12,6 +12,16 @@ from OpenGL.GL import (
 from glfw import (
     CURSOR,
     CURSOR_DISABLED,
+    KEY_0,
+    KEY_1,
+    KEY_2,
+    KEY_3,
+    KEY_4,
+    KEY_5,
+    KEY_6,
+    KEY_7,
+    KEY_8,
+    KEY_9,
     KEY_A as A,
     KEY_B as B,
     KEY_C as C,
@@ -55,31 +65,65 @@ from glfw import (
 def keyboard_callback(
     window: Any, key: int, _scancode: int, action: int, _mods: int
 ):
+    """
+    Handle keyboard input for controlling the scene and objects.
+
+    Parameters
+    ----------
+    window : Any
+        The GLFW window object.
+    key : int
+        The key that was pressed or released.
+    _scancode : int
+        The system-specific scancode of the key.
+    action : int
+        The action (PRESS, REPEAT, or RELEASE).
+    _mods : int
+        Bit field describing which modifier keys were held down.
+
+    Notes
+    -----
+    This function maps keyboard inputs to camera and object transformations.
+    """
     scene: Scene = get_window_user_pointer(window)
     i = scene.index
     o = scene.objects[i]
     c = scene.camera
-    step = 0.2
+    step = 0.1
 
     # INFO: Camera position
 
     # Move forwards and backwards
     if key == W and action in (PRESS, REPEAT):
-        _ = c.move(step, "z")
+        _ = c.move(step * 2, "z")
     if key == S and action in (PRESS, REPEAT):
-        _ = c.move(-step, "z")
+        _ = c.move(-step * 2, "z")
 
     # Pan
     if key == A and action in (PRESS, REPEAT):
-        _ = c.move(step, "x")
+        _ = c.move(-step * 2, "x")
     if key == D and action in (PRESS, REPEAT):
-        _ = c.move(-step, "x")
+        _ = c.move(step * 2, "x")
 
     # Tilt
     if key == Q and action in (PRESS, REPEAT):
-        _ = c.move(step, "y")
+        _ = c.move(step * 2, "y")
     if key == E and action in (PRESS, REPEAT):
-        _ = c.move(-step, "y")
+        _ = c.move(-step * 2, "y")
+
+    # INFO: Object selection controls
+
+    for i, keynum in enumerate(
+        [KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0]
+    ):
+        if key == keynum and action == PRESS:
+            scene.index = i % len(scene.objects)
+
+    # Switch object being controlled
+    if key == Z and action == PRESS:
+        scene.index = (scene.index - 1) % len(scene.objects)
+    if key == X and action == PRESS:
+        scene.index = (scene.index + 1) % len(scene.objects)
 
     # INFO: Selected object controls
 
@@ -120,9 +164,9 @@ def keyboard_callback(
         o.rotation["y"] -= step
 
     # Scale
-    if key == Z and action in (PRESS, REPEAT):
+    if key == C and action in (PRESS, REPEAT):
         o.scale -= step
-    if key == X and action in (PRESS, REPEAT):
+    if key == V and action in (PRESS, REPEAT):
         o.scale += step
 
     # Toggle wireframe mode
@@ -132,12 +176,6 @@ def keyboard_callback(
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
         else:
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
-
-    # Switch object being controlled
-    if key == C and action == PRESS:
-        scene.index = (scene.index + 1) % len(scene.objects)
-    if key == V and action == PRESS:
-        scene.index = (scene.index - 1) % len(scene.objects)
 
     # Reset object
     if key == B and action == PRESS:
@@ -149,10 +187,38 @@ def keyboard_callback(
 
 
 def framebuffer_callback(_window: Any, width: int, height: int) -> None:
+    """
+    Handle framebuffer size changes.
+
+    Parameters
+    ----------
+    _window : Any
+        The GLFW window object (unused).
+    width : int
+        The new width of the framebuffer.
+    height : int
+        The new height of the framebuffer.
+
+    Notes
+    -----
+    Updates the viewport to match the new framebuffer dimensions.
+    """
     glViewport(0, 0, width, height)
 
 
 def mouse_callback(window: Any, x_pos: float, y_pos: float) -> None:
+    """
+    Handle mouse movement for camera rotation.
+
+    Parameters
+    ----------
+    window : Any
+        The GLFW window object.
+    x_pos : float
+        The current x-coordinate of the mouse cursor.
+    y_pos : float
+        The current y-coordinate of the mouse cursor.
+    """
     scene: Scene = get_window_user_pointer(window)
     camera = scene.camera
 
@@ -170,12 +236,35 @@ def mouse_callback(window: Any, x_pos: float, y_pos: float) -> None:
 
 
 def scroll_callback(window: Any, _x_offset: float, y_offset: float) -> None:
+    """
+    Handle mouse scroll for camera zoom.
+
+    Parameters
+    ----------
+    window : Any
+        The GLFW window object.
+    _x_offset : float
+        The horizontal scroll offset (unused).
+    y_offset : float
+        The vertical scroll offset.
+    """
     scene: Scene = get_window_user_pointer(window)
     _ = scene.camera.process_scroll_movement(y_offset)
 
 
 def init_controller(window: Any):
-    # INFO: Setup input mode, see: https://www.glfw.org/docs/3.3/input_guide.html
+    """
+    Initialize the controller by setting up input callbacks.
+
+    Parameters
+    ----------
+    window : Any
+        The GLFW window object.
+
+    Note
+    ----
+    For more information on how to setup the input mode and its callbacks, see: https://www.glfw.org/docs/3.3/input_guide.html
+    """
     set_input_mode(window, CURSOR, CURSOR_DISABLED)
     if raw_mouse_motion_supported():
         set_input_mode(window, RAW_MOUSE_MOTION, TRUE)

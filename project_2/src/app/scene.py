@@ -48,6 +48,21 @@ from tabulate import tabulate
 
 
 class Scene:
+    """
+    A class to represent a 3D scene containing objects and a camera.
+
+    Attributes
+    ----------
+    camera : Camera
+        The camera viewing the scene.
+    program : Any
+        The OpenGL shader program ID.
+    objects : list[Object]
+        The list of 3D objects in the scene.
+    index : int
+        The index of the object currently under control.
+    """
+
     camera: Camera
     program: Any
     objects: list[Object] = []
@@ -88,6 +103,16 @@ class Scene:
     def _upload_vertices(
         self, vertices_list: list[tuple[float, float, float]], buffer: Any
     ) -> None:
+        """
+        Upload vertex data to the GPU.
+
+        Parameters
+        ----------
+        vertices_list : list[tuple[float, float, float]]
+            List of vertex coordinates (x, y, z).
+        buffer : Any
+            The OpenGL buffer ID for vertex data.
+        """
         vertices = array(vertices_list, dtype=float32)
         glBindBuffer(GL_ARRAY_BUFFER, buffer[0])
         glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
@@ -99,6 +124,16 @@ class Scene:
     def _upload_textures(
         self, texture_coord: list[tuple[float, float]], buffer: Any
     ) -> None:
+        """
+        Upload texture coordinates to the GPU.
+
+        Parameters
+        ----------
+        texture_coord : list[tuple[float, float]]
+            List of texture coordinates (u, v).
+        buffer : Any
+            The OpenGL buffer ID for texture data.
+        """
         textures = array(texture_coord, dtype=float32)
         glBindBuffer(GL_ARRAY_BUFFER, buffer[1])
         glBufferData(GL_ARRAY_BUFFER, textures.nbytes, textures, GL_STATIC_DRAW)
@@ -108,6 +143,14 @@ class Scene:
         glVertexAttribPointer(loc_textures, 2, GL_FLOAT, False, stride, offset)
 
     def draw(self, window: Any) -> None:
+        """
+        Render the scene.
+
+        Parameters
+        ----------
+        window : Any
+            The GLFW window object.
+        """
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glClearColor(0x33 / 255, 0x3C / 255, 0x43 / 255, 1.0)
         for obj in self.objects:
@@ -131,6 +174,14 @@ class Scene:
         swap_buffers(window)
 
     def objects_state(self) -> list[list[str]]:
+        """
+        Generate a formatted state of all objects in the scene.
+
+        Returns
+        -------
+        list[list[str]]
+            A table-like structure with object positions, rotations, and scales.
+        """
         state: list[list[str]] = []
         for i, obj in enumerate(self.objects):
             state.append(
@@ -144,6 +195,14 @@ class Scene:
         return state
 
     def camera_state(self) -> list[str]:
+        """
+        Generate a formatted state of the camera.
+
+        Returns
+        -------
+        list[str]
+            A list containing camera position, front, and up vectors.
+        """
         cam = self.camera
         state: list[str] = [
             f"({cam.pos.x:.2f}, {cam.pos.y:.2f}, {cam.pos.z:.2f})",
@@ -153,6 +212,10 @@ class Scene:
         return state
 
     def log(self) -> None:
+        """
+        Print the current state of objects and camera to the console.
+        Uses `tabulate` for pretty-printing.
+        """
         i = self.index
         _ = os.system("clear")
         print("Objects' state")
@@ -164,7 +227,7 @@ class Scene:
         ]
         print(tabulate(self.objects_state(), headers=headers, tablefmt="grid"))
         print("\nCamera's state:")
-        headers = ["Position", "Front", "Up"]
+        headers = ["Position (x, y, z)", "Front (x, y, z)", "Up (x, y, z)"]
         print(tabulate([self.camera_state()], headers=headers, tablefmt="grid"))
         print(
             f"\nCurrently controlling Object {i + 1} '{self.objects[i].name}'\n"
