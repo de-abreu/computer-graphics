@@ -1,5 +1,4 @@
 from time import sleep
-
 from glfw import poll_events, swap_buffers, window_should_close
 from OpenGL.GL import (
     GL_ARRAY_BUFFER,
@@ -94,13 +93,14 @@ def main():
 
     # Main loop
     while not window_should_close(window):
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        glClearColor(*palette.background, 1.0)
+
         controller.handle_input()
         logger.log(controller.i)
         for obj in objects:
             obj.draw()
         sleep(1.0 / 30)  # 30 FPS target
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-        glClearColor(*palette.background, 1.0)
         swap_buffers(window)
         poll_events()
 

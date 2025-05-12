@@ -1,14 +1,9 @@
 # Python
-*$py.class
-*.egg
-*.egg-info/
+__pycache__/
 *.py[cod]
+*$py.class
 *.so
 .Python
-.eggs/
-.installed.cfg
-MANIFEST
-__pycache__/
 build/
 develop-eggs/
 dist/
@@ -22,9 +17,13 @@ sdist/
 stubs/
 var/
 wheels/
+.eggs/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
-# #3D models and textures
-
+#3D models and textures
 src/objects/
 
 # IDE specific
@@ -52,4 +51,8 @@ build/
 .DS_Store
 Thumbs.db
 .direnv
+
+# Flake
+.direnv
+flake.lock
 result

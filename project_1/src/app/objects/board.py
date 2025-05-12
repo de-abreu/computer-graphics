@@ -1,4 +1,4 @@
-from .object import Object
+from app.objects.object import Object
 from typing import Any, final, override
 from OpenGL.GL import (
     GL_TRUE,

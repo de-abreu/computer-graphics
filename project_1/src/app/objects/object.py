@@ -73,7 +73,6 @@ class TransformDict(dict[str, float]):
             raise TypeError(
                 f"update expected at most 1 argument, got {len(args)}"
             )
-
         if args:
             other = args[0]
             if isinstance(other, Mapping):

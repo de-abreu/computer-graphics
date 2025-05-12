@@ -1,8 +1,7 @@
 # Projeto 1
 
-Demonstração
 ![Peças de xadrez de cores variadas, em posição de xeque-mate sobre um
-tabuleiro](imgs/snapshot_2025-04-06_20-03-00.png)
+tabulerio](imgs/snapshot_2025-04-06_20-03-00.png)
 
 Demonstração de um programa simples para renderização de objetos em 2D e 3D, em
 diferentes cores.
