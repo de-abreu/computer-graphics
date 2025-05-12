@@ -46,6 +46,71 @@ Em seguida o programa poderá ser executado com:
 python src/main.py
 ```
 
+## Adicionando modelos
+
+Para adicionar modelos 3D e uma textura para cada modelo, insira o arquivo
+`.obj` e sua textura em formato `.jpg` ou `.png` na pasta `src/objects`, como no
+seguinte exemplo:
+
+```
+ src/objects
+├──  Bark
+│   ├──  model.mtl
+│   ├── 󰆧 model.obj
+│   └──  texture.jpg
+├──  Ceiling
+│   ├──  model.mtl
+│   ├── 󰆧 model.obj
+│   └──  texture.jpg
+├──  Chessboard
+│   ├── 󰆧 model.obj
+│   └──  texture.jpg
+├──  CoffeeTable
+│   ├──  model.mtl
+│   ├── 󰆧 model.obj
+│   └──  texture.jpg
+├──  Floor
+│   ├──  model.mtl
+│   ├── 󰆧 model.obj
+│   └──  texture.jpg
+├──  Leaves
+│   ├──  model.mtl
+│   ├── 󰆧 model.obj
+│   └──  texture.jpg
+├──  PicnicTable
+│   ├──  model.mtl
+│   ├── 󰆧 model.obj
+│   └──  texture.png
+├──  River
+│   ├──  model.mtl
+│   └── 󰆧 model.obj
+├──  SkyDome
+│   ├──  model.mtl
+│   ├── 󰆧 model.obj
+│   └──  texture.jpg
+├──  Sofa
+│   ├──  model.mtl
+│   ├── 󰆧 model.obj
+│   └──  texture.jpg
+├──  Terrain
+│   ├──  model.mtl
+│   ├── 󰆧 model.obj
+│   └──  texture.jpg
+├──  Walls
+│   ├──  model.mtl
+│   ├── 󰆧 model.obj
+│   └──  texture.png
+├──  Well
+│   ├──  model.mtl
+│   ├── 󰆧 model.obj
+│   └──  texture.png
+└──  Window
+    ├──  model.mtl
+    ├── 󰆧 model.obj
+    └──  texture.jpg
+
+```
+
 ## 🕹️ Controles Interativos
 
 ### ⌨️ Teclado
