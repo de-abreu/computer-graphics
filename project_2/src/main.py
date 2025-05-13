@@ -29,8 +29,16 @@ def main():
                 initial_rotation=(0.0, -0.7, 0.0),
                 initial_scale=0.01,
             ),
-            desc("Bark"),
-            desc("Leaves"),
+            desc(
+                "Bark",
+                initial_position=(-3.7, -1.1, -20.7),
+                initial_rotation=(0.0, 0.8, 0.0),
+            ),
+            desc(
+                "Leaves",
+                initial_position=(-3.7, -1.1, -20.7),
+                initial_rotation=(0.0, 0.8, 0.0),
+            ),
             desc(
                 "Well",
                 initial_position=(3.5, -1.0, -28.6),
@@ -39,8 +47,8 @@ def main():
             ),
             desc(
                 "PicnicTable",
-                initial_position=(-4.6, 0.0, -23.5),
-                initial_rotation=(0.0, 0.4, 0.0),
+                initial_position=(-3.1, -1.1, -27.9),
+                initial_rotation=(0.0, 0.6, 0.0),
                 initial_scale=0.03,
             ),
             desc(

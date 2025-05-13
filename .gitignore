@@ -24,7 +24,7 @@ wheels/
 MANIFEST
 
 #3D models and textures
-src/objects/
+objects/
 
 # IDE specific
 .vscode/
