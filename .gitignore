@@ -23,7 +23,7 @@ wheels/
 *.egg
 MANIFEST
 
-#3D models and textures
+# 3D models and textures
 objects/
 
 # IDE specific
@@ -51,8 +51,7 @@ build/
 .DS_Store
 Thumbs.db
 .direnv
-
-# Flake
-.direnv
-flake.lock
 result
+
+# Reference files
+**/references/

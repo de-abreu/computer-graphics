@@ -1,10 +1,16 @@
 from glob import glob
-from app.transform_dict import TransformDict
+from app.utils import (
+    BufferData,
+    Face,
+    Model,
+    ObjConfig,
+    ReflectionCoeficients,
+    TransformDict,
+)
 from copy import deepcopy
 from OpenGL.GL.images import glTexImage2D
 from OpenGL.constants import GL_UNSIGNED_BYTE
 from PIL import Image
-from typing import TypedDict, final
 from OpenGL.GL import (
     GL_LINEAR,
     GL_REPEAT,
@@ -19,55 +25,6 @@ from OpenGL.GL import (
 )
 from numpy import array, cos, float32, sin
 from numpy.typing import NDArray
-
-
-@final
-class ObjDescriptor:
-    """
-    A descriptor class for object properties.
-
-    Attributes
-    ----------
-    model_name : str
-        The name of the 3D model, must match a folder name under src/objects.
-    initial_position : tuple[float, float, float]
-        The initial position of the object in 3D space.
-    initial_rotation : tuple[float, float, float]
-        The initial rotation of the object in radians.
-    initial_scale : float
-        The initial scale of the object.
-    """
-
-    def __init__(
-        self,
-        model_name: str,
-        initial_position: tuple[float, float, float] = (0.0, 0.0, -20.0),
-        initial_rotation: tuple[float, float, float] = (0.0, 0.0, 0.0),
-        initial_scale: float = 1.0,
-    ):
-        self.model_name = model_name
-        self.initial_position = initial_position
-        self.initial_rotation = initial_rotation
-        self.initial_scale = initial_scale
-
-
-class Model(TypedDict):
-    """
-    A typed dictionary representing a 3D model.
-
-    Attributes
-    ----------
-    vertices : list[tuple[float, float, float]]
-        The vertices of the model.
-    texture_coord : list[tuple[float, float]]
-        The texture coordinates of the model.
-    faces : list[tuple[list[int], list[int], str | None]]
-        The faces of the model, including vertex indices, texture indices, and material names.
-    """
-
-    vertices: list[tuple[float, float, float]]
-    texture_coord: list[tuple[float, float]]
-    faces: list[tuple[list[int], list[int], str | None]]
 
 
 class Object:
@@ -100,8 +57,8 @@ class Object:
         The transformation matrix of the object.
     """
 
-    _name: str
     _id: int
+    _name: str
     _initial_vertex: int
     _vertices_count: int
     _initial_position: TransformDict
@@ -111,34 +68,26 @@ class Object:
     _rotation: TransformDict
     _scale: float
     _transformation: NDArray[float32]
+    rc: ReflectionCoeficients
 
-    def __init__(
-        self,
-        id: int,
-        description: ObjDescriptor,
-        vertices: list[tuple[float, float, float]],
-        texture_coord: list[tuple[float, float]],
-    ):
+    def __init__(self, id: int, config: ObjConfig, bd: BufferData):
         self._id = id
-        self._name = description.model_name
+        self._name = config.model_name
         self._initial_vertex, self._vertices_count = self._load_object(
-            vertices, texture_coord
+            config.path + config.model_name, bd
         )
 
-        pos = description.initial_position
         self._initial_position = TransformDict(
-            {"x": pos[0], "y": pos[1], "z": pos[2]},
-            on_change=self.update,
+            config.position, on_change=self.update
         )
         self._position = deepcopy(self._initial_position)
 
-        rot = description.initial_rotation
         self._initial_rotation = TransformDict(
-            {"x": rot[0], "y": rot[1], "z": rot[2]},
-            on_change=self.update,
+            config.rotation, on_change=self.update
         )
         self._rotation = deepcopy(self._initial_rotation)
-        self._scale = self._initial_scale = description.initial_scale
+        self._scale = self._initial_scale = config.scale
+        self.rc = config.reflection_coeficients
         self.update()
 
     @property
@@ -186,55 +135,56 @@ class Object:
         self._scale = max(0.01, value)
         self.update()
 
-    def _load_model(self) -> Model:
+    def _load_model(self, path: str) -> Model:
         """
         Load the 3D model from an OBJ file.
 
         Returns
         -------
         Model
-            A dictionary containing the vertices, texture coordinates, and faces of the model.
-
-        Notes
-        -----
-        The OBJ file is expected to be in the `src/objects/{model_name}/model.obj` path.
+            A dictionary containing the vertices, normals and texture
+            coordinates associated with faces of an 3D model.
         """
-        model: Model = {"vertices": [], "texture_coord": [], "faces": []}
+        model = Model()
         material: str | None = None
 
-        for line in open(f"src/objects/{self._name}/model.obj", "r"):
+        for line in open(f"{path}/model.obj", "r"):
             if line.startswith("#"):
                 continue
             values = line.split()
             if not values:
                 continue
             match values[0]:
-                case "v":  # recovering vertices
-                    model["vertices"].append(
+                case "v":
+                    model.vertices.append(
                         (float(values[1]), float(values[2]), float(values[3]))
                     )
-                case "vt":  # recovering texture coordinates
-                    model["texture_coord"].append(
+                case "vt":
+                    model.texture_coord.append(
                         (float(values[1]), float(values[2]))
                     )
+                case "vn":
+                    model.normals.append(
+                        (float(values[1]), float(values[2]), float(values[3]))
+                    )
                 case "f":
-                    face: list[int] = []
-                    face_texture: list[int] = []
+                    face = Face(material=material)
                     for v in values[1:]:
                         w: list[str] = v.split("/")
-                        face.append(int(w[0]))
+                        face.vertices.append(int(w[0]))
                         if len(w) >= 2 and len(w[1]) > 0:
-                            face_texture.append(int(w[1]))
+                            face.texture.append(int(w[1]))
                         else:
-                            face_texture.append(0)
-                    model["faces"].append((face, face_texture, material))
+                            face.texture.append(0)
+                        face.normals.append(int(w[2]))
+                    model.faces.append(face)
                 case "usemtl" | "usemat":
                     material = values[1]
                 case _:
                     pass
         return model
 
-    def _load_texture(self):
+    def _load_texture(self, path: str):
         """
         Load and bind the texture for the object.
 
@@ -247,7 +197,7 @@ class Object:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-        img = Image.open(glob(f"src/objects/{self._name}/texture.*")[0])
+        img = Image.open(glob(f"{path}/texture.*")[0])
         width = img.size[0]
         height = img.size[1]
         img_data = img.tobytes("raw", "RGB", 0, -1)
@@ -283,11 +233,7 @@ class Object:
             triangulated_face.extend([face[0], face[i], face[i + 1]])
         return triangulated_face
 
-    def _load_object(
-        self,
-        vertices_list: list[tuple[float, float, float]],
-        texture_coord_list: list[tuple[float, float]],
-    ) -> tuple[int, int]:
+    def _load_object(self, path: str, bd: BufferData) -> tuple[int, int]:
         """
         Load the object's vertices and texture coordinates into the global lists.
 
@@ -303,19 +249,19 @@ class Object:
         tuple[int, int]
             The starting index and count of the object's vertices in the global list.
         """
-        model = self._load_model()
-        start = len(vertices_list)
+        model = self._load_model(path)
+        start = len(bd.vertices)
 
-        for face in model["faces"]:
-            for vertex_id in Object._triangulate_face(face[0]):
-                vertices_list.append(model["vertices"][vertex_id - 1])
-            for texture_id in Object._triangulate_face(face[1]):
-                texture_coord_list.append(
-                    model["texture_coord"][texture_id - 1]
-                )
-        self._load_texture()
+        for face in model.faces:
+            for vertex_id in Object._triangulate_face(face.vertices):
+                bd.vertices.append(model.vertices[vertex_id - 1])
+            for texture_id in Object._triangulate_face(face.texture):
+                bd.texture_coord.append(model.texture_coord[texture_id - 1])
+            for normal_id in Object._triangulate_face(face.normals):
+                bd.normals.append(model.normals[normal_id - 1])
+        self._load_texture(path)
 
-        return start, len(vertices_list) - start
+        return start, len(bd.vertices) - start
 
     def reset(self) -> None:
         """

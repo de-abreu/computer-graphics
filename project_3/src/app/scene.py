@@ -1,41 +1,34 @@
 # pyright: reportCallIssue=false
+from OpenGL.raw.GL.VERSION.GL_2_0 import glUniform1f
 from app.camera import Camera
-from app.object import Object, ObjDescriptor
-from app.shader import Shader
-import ctypes
+from app.object import Object
+from app.utils import Shader, ObjConfig, ReflectionCoeficients
+from dataclasses import asdict
+import toml
 import os
 from typing import Any
 from OpenGL.GL import (
-    GL_ARRAY_BUFFER,
     GL_BLEND,
     GL_COLOR_BUFFER_BIT,
     GL_DEPTH_BUFFER_BIT,
     GL_DEPTH_TEST,
     GL_DONT_CARE,
-    GL_FLOAT,
     GL_LINE_SMOOTH,
     GL_LINE_SMOOTH_HINT,
     GL_ONE_MINUS_SRC_ALPHA,
     GL_SRC_ALPHA,
-    GL_STATIC_DRAW,
     GL_TEXTURE_2D,
     GL_TRIANGLES as TRIANGLES,
     GL_TRUE as TRUE,
-    glBindBuffer,
     glBindTexture,
     glBlendFunc,
-    glBufferData,
     glClear,
     glClearColor,
     glDrawArrays,
     glEnable,
-    glEnableVertexAttribArray,
-    glGenBuffers,
-    glGetAttribLocation,
     glGetUniformLocation,
     glHint,
     glUniformMatrix4fv,
-    glVertexAttribPointer,
 )
 from glfw import (
     get_window_size,
@@ -43,8 +36,10 @@ from glfw import (
     show_window,
     swap_buffers,
 )
-from numpy import array, float32
 from tabulate import tabulate
+
+from app.utils import init_buffers
+from app.utils.dataclasses import BufferData
 
 
 class Scene:
@@ -68,9 +63,18 @@ class Scene:
     objects: list[Object] = []
     index: int = 0
 
-    def __init__(
-        self, window: Any, obj_descriptors: list[ObjDescriptor]
-    ) -> None:
+    def __init__(self, window: Any, config_path: str) -> None:
+        """
+        Initialize the scene with objects loaded from a TOML configuration file.
+
+        Parameters
+        ----------
+        window : Any
+            The GLFW window object.
+        config_path : str
+            Path to the TOML configuration file.
+        """
+
         shader = Shader("src/shaders/vertex.vs", "src/shaders/fragments.fs")
         shader.use()
         glEnable(GL_TEXTURE_2D)
@@ -79,68 +83,52 @@ class Scene:
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glEnable(GL_LINE_SMOOTH)
         width, height = get_window_size(window)
-        vertices_list: list[tuple[float, float, float]] = []
-        texture_coord: list[tuple[float, float]] = []
+        bd = BufferData()
         self.camera = Camera(width, height)
         self.program = shader.getProgram()
-        for i in range(len(obj_descriptors)):
-            self.objects.append(
-                Object(
-                    i,
-                    obj_descriptors[i],
-                    vertices_list,
-                    texture_coord,
-                )
-            )
-
-        buffers = glGenBuffers(2)
-        self._upload_vertices(vertices_list, buffers)
-        self._upload_textures(texture_coord, buffers)
+        descriptors = self._load_config(config_path)
+        for i, desc in enumerate(descriptors):
+            self.objects.append(Object(i, desc, bd))
+        init_buffers(self.program, bd)
         set_window_user_pointer(window, self)
         show_window(window)
         glEnable(GL_DEPTH_TEST)
 
-    def _upload_vertices(
-        self, vertices_list: list[tuple[float, float, float]], buffer: Any
-    ) -> None:
+    def _load_config(self, config_path: str) -> list[ObjConfig]:
         """
-        Upload vertex data to the GPU.
+        Load the scene configuration from a TOML file.
 
         Parameters
         ----------
-        vertices_list : list[tuple[float, float, float]]
-            List of vertex coordinates (x, y, z).
-        buffer : Any
-            The OpenGL buffer ID for vertex data.
-        """
-        vertices = array(vertices_list, dtype=float32)
-        glBindBuffer(GL_ARRAY_BUFFER, buffer[0])
-        glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
-        stride, offset = vertices.strides[0], ctypes.c_void_p(0)
-        loc_vertices = glGetAttribLocation(self.program, "position")
-        glEnableVertexAttribArray(loc_vertices)
-        glVertexAttribPointer(loc_vertices, 3, GL_FLOAT, False, stride, offset)
+        config_path : str
+            Path to the TOML configuration file.
 
-    def _upload_textures(
-        self, texture_coord: list[tuple[float, float]], buffer: Any
-    ) -> None:
+        Returns
+        -------
+        list[ObjConfig]
+            A list of ObjConfig objects.
         """
-        Upload texture coordinates to the GPU.
+        with open(config_path, "r") as f:
+            config = toml.load(f)
 
-        Parameters
-        ----------
-        texture_coord : list[tuple[float, float]]
-            List of texture coordinates (u, v).
-        buffer : Any
-            The OpenGL buffer ID for texture data.
-        """
-        textures = array(texture_coord, dtype=float32)
-        glBindBuffer(GL_ARRAY_BUFFER, buffer[1])
-        glBufferData(GL_ARRAY_BUFFER, textures.nbytes, textures, GL_STATIC_DRAW)
-        stride, offset = textures.strides[0], ctypes.c_void_p(0)
-        loc_textures = glGetAttribLocation(self.program, "texture_coord")
-        glEnableVertexAttribArray(loc_textures)
-        glVertexAttribPointer(loc_textures, 2, GL_FLOAT, False, stride, offset)
+        path = os.path.dirname(config_path)
+        return [
+            ObjConfig(
+                path,
+                name,
+                tuple(props.get("position", (0.0, 0.0, -20.0))),
+                tuple(props.get("rotation", (0.0, 0.0, 0.0))),
+                props.get("scale", 1.0),
+                ReflectionCoeficients(
+                    props.get("ambient", 0.5),
+                    props.get("diffuse", 0.5),
+                    props.get("specular", 0.5),
+                    props.get("specular_expoent", 32.0),
+                ),
+                props.get("emmiter", None),
+            )
+            for name, props in config.items()
+        ]
 
     def draw(self, window: Any) -> None:
         """
@@ -157,6 +145,9 @@ class Scene:
             mat = obj.transformation
             loc = glGetUniformLocation(self.program, "model")
             glUniformMatrix4fv(loc, 1, TRUE, mat)
+            for coefficient, value in asdict(obj.rc):
+                loc = glGetUniformLocation(self.program, coefficient)
+                glUniform1f(loc, value)
             glBindTexture(GL_TEXTURE_2D, obj.id)
             glDrawArrays(TRIANGLES, obj.initial_vertex, obj.vertices_count)
         glUniformMatrix4fv(

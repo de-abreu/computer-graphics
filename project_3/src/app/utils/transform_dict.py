@@ -16,15 +16,15 @@ class TransformDict(dict[str, float]):
     _on_change : Callable[[], None] | None
         Optional callback function triggered on dictionary modifications.
     """
+
     _on_change: Callable[[], None] | None
 
     def __init__(
         self,
-        *args: Iterable[tuple[str, float]] | Mapping[str, float],
+        coords: tuple[float, float, float],
         on_change: Callable[[], None] | None = None,
-        **kwargs: float,
     ) -> None:
-        super().__init__(*args, **kwargs)
+        super().__init__({"x": coords[0], "y": coords[1], "z": coords[2]})
         self._on_change = on_change
 
     @override

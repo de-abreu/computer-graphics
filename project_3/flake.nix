@@ -20,6 +20,7 @@
         pyglm
         pyopengl
         tabulate
+        toml
         pyyaml
       ]);
 
