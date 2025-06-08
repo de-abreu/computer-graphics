@@ -2,12 +2,12 @@ from glob import glob
 from app.utils import (
     BufferData,
     Face,
+    Location,
     Model,
-    ObjConfig,
+    ObjectConfig as Config,
+    ObjectState as State,
     ReflectionCoeficients,
-    TransformDict,
 )
-from copy import deepcopy
 from OpenGL.GL.images import glTexImage2D
 from OpenGL.constants import GL_UNSIGNED_BYTE
 from PIL import Image
@@ -28,71 +28,34 @@ from numpy.typing import NDArray
 
 
 class Object:
-    """
-    A class to represent a 3D object in the scene.
-
-    Attributes
-    ----------
-    _name : str
-        The name of the object.
-    _id : int
-        The unique identifier of the object.
-    _initial_vertex : int
-        The starting index of the object's vertices in the global vertex list.
-    _vertices_count : int
-        The number of vertices in the object.
-    _initial_position : TransformDict
-        The initial position of the object.
-    _initial_rotation : TransformDict
-        The initial rotation of the object.
-    _initial_scale : float
-        The initial scale of the object.
-    _position : TransformDict
-        The current position of the object.
-    _rotation : TransformDict
-        The current rotation of the object.
-    _scale : float
-        The current scale of the object.
-    _transformation : NDArray[float32]
-        The transformation matrix of the object.
-    """
-
+    name: str
+    location: Location
+    rc: ReflectionCoeficients
     _id: int
-    _name: str
     _initial_vertex: int
     _vertices_count: int
-    _initial_position: TransformDict
-    _initial_rotation: TransformDict
-    _initial_scale: float
-    _position: TransformDict
-    _rotation: TransformDict
-    _scale: float
+    _initial: State
+    _current: State
     _transformation: NDArray[float32]
-    rc: ReflectionCoeficients
 
-    def __init__(self, id: int, config: ObjConfig, bd: BufferData):
+    def __init__(self, id: int, config: Config, bd: BufferData):
         self._id = id
-        self._name = config.model_name
-        self._initial_vertex, self._vertices_count = self._load_object(
-            config.path + config.model_name, bd
-        )
-
-        self._initial_position = TransformDict(
-            config.position, on_change=self.update
-        )
-        self._position = deepcopy(self._initial_position)
-
-        self._initial_rotation = TransformDict(
-            config.rotation, on_change=self.update
-        )
-        self._rotation = deepcopy(self._initial_rotation)
-        self._scale = self._initial_scale = config.scale
+        self.name = config.model_name
+        self.location = config.location
         self.rc = config.reflection_coeficients
-        self.update()
+        self._initial_vertex, self._vertices_count = self._load_object(
+            f"{config.path}/{config.model_name}", bd
+        )
+        parameters = {
+            "position": config.position,
+            "rotation": config.rotation,
+            "scale": config.scale,
+            "callback": self._update
+        }
+        self._initial = State(**parameters)  # pyright: ignore [reportArgumentType]
+        self._current = State(**parameters)  # pyright: ignore [reportArgumentType]
+        self._update()
 
-    @property
-    def name(self) -> str:
-        return self._name
 
     @property
     def id(self) -> int:
@@ -111,29 +74,29 @@ class Object:
         return self._transformation
 
     @property
-    def position(self) -> TransformDict:
-        return self._position
+    def position(self) -> dict[str, float]:
+        return self._current.position
 
     @position.setter
-    def position(self, value: dict[str, float]):  # pyright: ignore[reportPropertyTypeMismatch]
-        self._position.update(value)
+    def position(self, value: dict[str, float]):
+        self._current.position = value
 
     @property
-    def rotation(self) -> TransformDict:
-        return self._rotation
+    def rotation(self) -> dict[str, float]:
+        return self._current.rotation
 
     @rotation.setter
-    def rotation(self, value: dict[str, float]):  # pyright: ignore[reportPropertyTypeMismatch]
-        self._rotation.update(value)
+    def rotation(self, value: dict[str, float]):
+        self._current.rotation = value
 
     @property
     def scale(self) -> float:
-        return self._scale
+        return self._current.scale
 
     @scale.setter
     def scale(self, value: float):
-        self._scale = max(0.01, value)
-        self.update()
+        self._current.scale = max(0.01, value)
+        self._update()
 
     def _load_model(self, path: str) -> Model:
         """
@@ -251,7 +214,6 @@ class Object:
         """
         model = self._load_model(path)
         start = len(bd.vertices)
-
         for face in model.faces:
             for vertex_id in Object._triangulate_face(face.vertices):
                 bd.vertices.append(model.vertices[vertex_id - 1])
@@ -267,10 +229,7 @@ class Object:
         """
         Reset the object to its initial position, rotation, and scale.
         """
-        self._position = deepcopy(self._initial_position)
-        self._rotation = deepcopy(self._initial_rotation)
-        self._scale = self._initial_scale
-        self.update()
+        self._current.copy(self._initial)
 
     def _rotationMatrix(self, axis: str) -> NDArray[float32]:
         """
@@ -312,7 +271,7 @@ class Object:
                 ]
         return array(matrix, dtype=float32)
 
-    def update(self):
+    def _update(self):
         """
         Update the object's transformation matrix based on its current position, rotation, and scale.
         """

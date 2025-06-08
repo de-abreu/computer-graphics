@@ -1,4 +1,3 @@
-# pyright: reportCallIssue=false
 from OpenGL.GL import (
     GL_COMPILE_STATUS,
     GL_LINK_STATUS,

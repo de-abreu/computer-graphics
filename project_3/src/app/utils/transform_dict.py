@@ -1,15 +1,12 @@
 from collections.abc import Iterable, Mapping
-from copy import copy
-from typing import Any, Callable, final, override
+
+from typing import Any, Callable, override
 
 
-@final
 class TransformDict(dict[str, float]):
     """
-    An observable dictionary that triggers a callback when modified.
-
-    This extends `dict[str, float]` and calls a callback function whenever
-    items are set or updated. Useful for tracking transformations in 3D graphics.
+    A restricted dictionary that only allows "x", "y", and "z" keys.
+    Triggers a callback when modified. Used for 3D transformations.
 
     Attributes
     ----------
@@ -18,19 +15,28 @@ class TransformDict(dict[str, float]):
     """
 
     _on_change: Callable[[], None] | None
+    _VALID_KEYS: set[str] = {"x", "y", "z"}
 
     def __init__(
         self,
-        coords: tuple[float, float, float],
+        *args: Iterable[tuple[str, float]] | Mapping[str, float],
         on_change: Callable[[], None] | None = None,
+        **kwargs: float,
     ) -> None:
-        super().__init__({"x": coords[0], "y": coords[1], "z": coords[2]})
+        super().__init__(*args, **kwargs)
         self._on_change = on_change
+        # Validate initial keys
+        for key in self:
+            if key not in self._VALID_KEYS:
+                raise KeyError(
+                    f"Invalid key: {key}. Only 'x', 'y', 'z' allowed."
+                )
 
     @override
     def __setitem__(self, key: str, value: float) -> None:
         """
         Set a key-value pair and trigger the callback if defined.
+        Only allows "x", "y", or "z" as keys.
 
         Parameters
         ----------
@@ -38,7 +44,14 @@ class TransformDict(dict[str, float]):
             The dictionary key to set.
         value : float
             The value to associate with the key.
+
+                Raises
+                ------
+                KeyError
+                    If the key is not "x", "y", or "z".
         """
+        if key not in self._VALID_KEYS:
+            raise KeyError(f"Invalid key: {key}. Only 'x', 'y', 'z' allowed.")
         super().__setitem__(key, value)
         if self._on_change:
             self._on_change()
@@ -47,6 +60,7 @@ class TransformDict(dict[str, float]):
     def update(self, *args: Any, **kwargs: float) -> None:
         """
         Update the dictionary with new key-value pairs and trigger the callback.
+        Only allows "x", "y", or "z" as keys.
 
         Parameters
         ----------
@@ -59,6 +73,8 @@ class TransformDict(dict[str, float]):
         ------
         TypeError
             If more than one positional argument is provided.
+        KeyError
+            If any key is not "x", "y", or "z".
         """
         if len(args) > 1:
             raise TypeError(
@@ -80,7 +96,8 @@ class TransformDict(dict[str, float]):
         if self._on_change:
             self._on_change()
 
-    def __copy__(self) -> "TransformDict":
+    @override
+    def copy(self) -> "TransformDict":
         """
         Create a shallow copy of the dictionary.
 
@@ -89,28 +106,5 @@ class TransformDict(dict[str, float]):
         TransformDict
             A new dictionary with the same items and callback reference.
         """
-        new_dict = TransformDict(self, on_change=None)
-        new_dict._on_change = self._on_change
-        return new_dict
-
-    def __deepcopy__(
-        self, memo: dict[int, object] | None = None
-    ) -> "TransformDict":
-        """
-        Create a deep copy of the dictionary.
-
-        Parameters
-        ----------
-        memo : dict[int, object] | None
-            Memo dictionary for tracking copied objects (used internally).
-
-        Returns
-        -------
-        TransformDict
-            A new dictionary with deep copies of items and callback.
-        """
-        if memo is None:
-            memo = {}
-        new_dict = TransformDict(self, on_change=copy(self._on_change))
-        memo[id(self)] = new_dict  # helps with recursive copying
+        new_dict = TransformDict(self, on_change=self._on_change)
         return new_dict

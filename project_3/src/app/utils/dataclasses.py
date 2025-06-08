@@ -1,16 +1,16 @@
 from dataclasses import dataclass, field
+from .enums import Location
 
 
 @dataclass
 class ReflectionCoeficients:
-    ambient: float
-    diffuse: float
-    specular: float
-    specular_expoent: float
+    diffuse_intensity: float
+    specular_intensity: float
+    specular_exponent: float
 
 
 @dataclass
-class ObjConfig:
+class ObjectConfig:
     """
     A configuration class for object properties.
 
@@ -32,13 +32,18 @@ class ObjConfig:
     rotation: tuple[float, float, float]
     scale: float
     reflection_coeficients: ReflectionCoeficients
-    emitter: int | None
+    is_emitter: bool
+    emission_color: tuple[float, float, float]
+    emission_intensity: float
+    location: Location = Location.both
+
 
 @dataclass
 class BufferData:
     vertices: list[tuple[float, float, float]] = field(default_factory=list)
     normals: list[tuple[float, float, float]] = field(default_factory=list)
     texture_coord: list[tuple[float, float]] = field(default_factory=list)
+
 
 @dataclass
 class Face:
@@ -64,5 +69,3 @@ class Model(BufferData):
     """
 
     faces: list[Face] = field(default_factory=list)
-
-

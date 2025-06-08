@@ -1,71 +1,93 @@
-// parametros da iluminacao ambiente e difusa
-uniform vec3 lightPos1; // define coordenadas de posicao da luz #1
-uniform vec3 lightPos2; // define coordenadas de posicao da luz #2
-uniform float ambient; // coeficiente de reflexao ambiente
-uniform float diffuse; // coeficiente de reflexao difusa
+#version 330 core
+#define NUM_LIGHTS 3
 
-// parametros da iluminacao especular
-uniform vec3 viewPos; // define coordenadas com a posicao da camera/observador
-uniform float specular; // coeficiente de reflexao especular
-uniform float specular_expoent; // expoente de reflexao especular
+// Define integer constants for locations.
+#define LOCATION_INTERNAL 0
+#define LOCATION_EXTERNAL 1
+#define LOCATION_BOTH     2
 
-// parametro com a cor da(s) fonte(s) de iluminacao
-vec3 lightColor1 = vec3(1.0, 1.0, 1.0);
-vec3 lightColor2 = vec3(0.0, 0.0, 1.0);
+// --- Light Source Struct ---
+struct LightSource {
+    vec3  position;
+    vec3  color;
+    float intensity;
+    int   location; // Corresponds to LOCATION_INTERNAL, EXTERNAL, BOTH
+};
 
-// parametros recebidos do vertex shader
-varying vec2 out_texture; // recebido do vertex shader
-varying vec3 out_normal; // recebido do vertex shader
-varying vec3 out_fragPos; // recebido do vertex shader
+// --- Uniforms ---
+uniform LightSource lights[NUM_LIGHTS]; // Array of light source structs
+
+// Global Lighting Parameters
+uniform float ambient_intensity;
+uniform vec3  ambient_color;
+
+// Material Parameters
+uniform float diffuse_intensity;
+uniform float specular_intensity;
+uniform float specular_exponent;
+
+// Camera/View Parameters
+uniform vec3 viewPos;
+
+// Object-Specific Behavior Parameters
+uniform bool isEmitter;       // Is this object a light source itself (and thus glows)?
+uniform vec3 emissionColor;   // If isEmitter, its glow color
+uniform int  objectLocation;  // Location type of the current object being rendered
+
+// Varying Inputs
+varying vec2 out_textureCoords;
+varying vec3 out_normal;
+varying vec3 out_fragPos;
+
+// Texture Sampler
 uniform sampler2D samplerTexture;
 
+void main() {
+    vec4 textureColor = texture2D(samplerTexture, out_textureCoords);
 
+    // 1. Handle Emissive Objects (Light source objects glow)
+    if (isEmitter) {
+        gl_FragColor = vec4(emissionColor, textureColor.a);
+        return; // No further lighting for purely emissive surfaces
+    }
 
-void main(){
+    // 2. Prepare common vectors
+    vec3 norm = normalize(out_normal);
+    vec3 viewDir = normalize(viewPos - out_fragPos);
 
-	// calculando reflexao ambiente
-	vec3 ambient = ambient * vec3(1.0,1.0,1.0);             
+    // 3. Ambient Lighting
+    vec3 ambientReflection = ambient_intensity * ambient_color * textureColor.rgb;
 
-	////////////////////////
-	// Luz #1
-	////////////////////////
-	
-	// calculando reflexao difusa
-	vec3 norm1 = normalize(out_normal); // normaliza vetores perpendiculares
-	vec3 lightDir1 = normalize(lightPos1 - out_fragPos); // direcao da luz
-	float diff1 = max(dot(norm1, lightDir1), 0.0); // verifica limite angular (entre 0 e 90)
-	vec3 diffuse1 = diffuse * diff1 * lightColor1; // iluminacao difusa
-	
-	// calculando reflexao especular
-	vec3 viewDir1 = normalize(viewPos - out_fragPos); // direcao do observador/camera
-	vec3 reflectDir1 = reflect(-lightDir1, norm1); // direcao da reflexao
-	float spec1 = pow(max(dot(viewDir1, reflectDir1), 0.0), specular_expoent);
-	vec3 specular1 = specular * spec1 * lightColor1;    
-	
-	
-	////////////////////////
-	// Luz #2
-	////////////////////////
-	
-	// calculando reflexao difusa
-	vec3 norm2 = normalize(out_normal); // normaliza vetores perpendiculares
-	vec3 lightDir2 = normalize(lightPos2 - out_fragPos); // direcao da luz
-	float diff2 = max(dot(norm2, lightDir2), 0.0); // verifica limite angular (entre 0 e 90)
-	vec3 diffuse2 = diffuse * diff2 * lightColor2; // iluminacao difusa
-	
-	// calculando reflexao especular
-	vec3 viewDir2 = normalize(viewPos - out_fragPos); // direcao do observador/camera
-	vec3 reflectDir2 = reflect(-lightDir2, norm2); // direcao da reflexao
-	float spec2 = pow(max(dot(viewDir2, reflectDir2), 0.0), specular_expoent);
-	vec3 specular2 = specular * spec2 * lightColor2;    
-	
-	////////////////////////
-	// Combinando as duas fontes
-	////////////////////////
-	
-	// aplicando o modelo de iluminacao
-	vec4 texture = texture2D(samplerTexture, out_texture);
-	vec4 result = vec4((ambient + diffuse1 + diffuse2 + specular1 + specular2),1.0) * texture; // aplica iluminacao
-	gl_FragColor = result;
+    // Initialize accumulators
+    vec3 totalDiffuse = vec3(0.0);
+    vec3 totalSpecular = vec3(0.0);
 
+    // 4. Loop Through Light Sources
+    for (int i = 0; i < NUM_LIGHTS; ++i) {
+        // Rule 2: Location-based light affection
+        // Accessing struct members: lights[i].location
+        if (lights[i].location == objectLocation ||
+            lights[i].location == LOCATION_BOTH ||
+            objectLocation == LOCATION_BOTH) {
+            // Accessing struct members: lights[i].color, lights[i].intensity, lights[i].position
+            vec3 currentLightEffectiveColor = lights[i].color * lights[i].intensity;
+
+            // Diffuse
+            vec3 lightDir = normalize(lights[i].position - out_fragPos);
+            float diffFactor = max(dot(norm, lightDir), 0.0);
+            vec3 diffuseComponent = diffuse_intensity * diffFactor * currentLightEffectiveColor;
+            totalDiffuse += diffuseComponent;
+
+            // Specular
+            vec3 reflectDir = reflect(-lightDir, norm);
+            float specFactor = pow(max(dot(viewDir, reflectDir), 0.0), specular_exponent);
+            vec3 specularComponent = specular_intensity * specFactor * currentLightEffectiveColor;
+            totalSpecular += specularComponent;
+        }
+    }
+
+    // 5. Combine Lighting Components
+    vec3 finalColor = ambientReflection + (totalDiffuse * textureColor.rgb) + totalSpecular;
+    
+    gl_FragColor = vec4(finalColor, textureColor.a);
 }

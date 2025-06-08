@@ -1,45 +1,58 @@
-# pyright: reportCallIssue=false
-from OpenGL.raw.GL.VERSION.GL_2_0 import glUniform1f
+import ctypes
+from numpy import array, float32
 from app.camera import Camera
 from app.object import Object
-from app.utils import Shader, ObjConfig, ReflectionCoeficients
+from app.light_source import Light
+from app.utils import (
+    BufferData,
+    Location,
+    ObjectConfig,
+    ReflectionCoeficients,
+    Shader,
+)
 from dataclasses import asdict
 import toml
 import os
 from typing import Any
 from OpenGL.GL import (
+    GL_ARRAY_BUFFER,
     GL_BLEND,
     GL_COLOR_BUFFER_BIT,
     GL_DEPTH_BUFFER_BIT,
     GL_DEPTH_TEST,
     GL_DONT_CARE,
+    GL_FLOAT as FLOAT,
     GL_LINE_SMOOTH,
     GL_LINE_SMOOTH_HINT,
     GL_ONE_MINUS_SRC_ALPHA,
     GL_SRC_ALPHA,
+    GL_STATIC_DRAW,
     GL_TEXTURE_2D,
     GL_TRIANGLES as TRIANGLES,
     GL_TRUE as TRUE,
+    glBindBuffer,
     glBindTexture,
     glBlendFunc,
+    glBufferData,
     glClear,
     glClearColor,
     glDrawArrays,
     glEnable,
+    glEnableVertexAttribArray,
+    glGenBuffers,
+    glGetAttribLocation,
     glGetUniformLocation,
     glHint,
+    glUniform1f,
+    glUniform3f,
     glUniformMatrix4fv,
+    glVertexAttribPointer,
 )
 from glfw import (
     get_window_size,
-    set_window_user_pointer,
     show_window,
     swap_buffers,
 )
-from tabulate import tabulate
-
-from app.utils import init_buffers
-from app.utils.dataclasses import BufferData
 
 
 class Scene:
@@ -60,8 +73,12 @@ class Scene:
 
     camera: Camera
     program: Any
+    window: Any
     objects: list[Object] = []
-    index: int = 0
+    light_sources: list[Light] = []
+    num_lights: int = 3
+    ambient_light_intensity: float = 0.5
+    ambient_light_color: tuple[float, float, float] = (1.0, 1.0, 1.0)
 
     def __init__(self, window: Any, config_path: str) -> None:
         """
@@ -76,25 +93,70 @@ class Scene:
         """
 
         shader = Shader("src/shaders/vertex.vs", "src/shaders/fragments.fs")
+        width, height = get_window_size(window)
+        bd = BufferData()
+        self.camera = Camera(width, height)
+        self.program = shader.getProgram()
+        self.window = window
+        descriptors = self._load_config(config_path)
+        for i, desc in enumerate(descriptors):
+            if desc.is_emitter:
+                light = Light(i, desc, bd)
+                self.objects.append(light)
+                self.light_sources.append(light)
+            else:
+                self.objects.append(Object(i, desc, bd))
+
         shader.use()
+        self._init_buffers(bd)
+        self._init_light_sources()
         glEnable(GL_TEXTURE_2D)
         glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE)
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
         glEnable(GL_LINE_SMOOTH)
-        width, height = get_window_size(window)
-        bd = BufferData()
-        self.camera = Camera(width, height)
-        self.program = shader.getProgram()
-        descriptors = self._load_config(config_path)
-        for i, desc in enumerate(descriptors):
-            self.objects.append(Object(i, desc, bd))
-        init_buffers(self.program, bd)
-        set_window_user_pointer(window, self)
         show_window(window)
         glEnable(GL_DEPTH_TEST)
 
-    def _load_config(self, config_path: str) -> list[ObjConfig]:
+    def _init_buffers(self, bd: BufferData):
+        buffers = glGenBuffers(3)
+        self._upload_data(buffers[0], bd.vertices, 3, "position")
+        self._upload_data(buffers[1], bd.texture_coord, 2, "texture_coord")
+        self._upload_data(buffers[2], bd.normals, 3, "normals")
+
+    def _upload_data(
+        self,
+        buffer: Any,
+        coord_list: list[tuple[float, ...]],
+        coord_size: int,
+        attr_name: str,
+    ) -> None:
+        """
+        Upload vertex data to the GPU.
+
+        Parameters
+        ----------
+        vertices_list : list[tuple[float, float, float]]
+            List of vertex coordinates (x, y, z).
+        buffer : Any
+            The OpenGL buffer ID for vertex data.
+        """
+        coords = array(coord_list, dtype=float32)
+        glBindBuffer(GL_ARRAY_BUFFER, buffer)
+        glBufferData(GL_ARRAY_BUFFER, coords.nbytes, coords, GL_STATIC_DRAW)
+        stride, offset = coords.strides[0], ctypes.c_void_p(0)
+        loc = glGetAttribLocation(self.program, attr_name)
+        glEnableVertexAttribArray(loc)
+        glVertexAttribPointer(loc, coord_size, FLOAT, False, stride, offset)
+
+    def _init_light_sources(self) -> None:
+        loc = glGetUniformLocation(self.program, "ambient_color")
+        glUniform3f(loc, *self.ambient_light_color)
+        for i, light in enumerate(self.light_sources):
+            loc = glGetUniformLocation(self.program, f"lights[{i}].color")
+            glUniform3f(loc, *light.color)
+
+    def _load_config(self, config_path: str) -> list[ObjectConfig]:
         """
         Load the scene configuration from a TOML file.
 
@@ -105,32 +167,34 @@ class Scene:
 
         Returns
         -------
-        list[ObjConfig]
-            A list of ObjConfig objects.
+        list[ObjectConfig]
+            A list of ObjectConfig objects.
         """
         with open(config_path, "r") as f:
             config = toml.load(f)
 
         path = os.path.dirname(config_path)
         return [
-            ObjConfig(
+            ObjectConfig(
                 path,
                 name,
                 tuple(props.get("position", (0.0, 0.0, -20.0))),
                 tuple(props.get("rotation", (0.0, 0.0, 0.0))),
                 props.get("scale", 1.0),
                 ReflectionCoeficients(
-                    props.get("ambient", 0.5),
-                    props.get("diffuse", 0.5),
-                    props.get("specular", 0.5),
+                    props.get("diffuse_intensity", 0.5),
+                    props.get("specular_intensity", 0.5),
                     props.get("specular_expoent", 32.0),
                 ),
-                props.get("emmiter", None),
+                props.get("is_emitter", False),
+                tuple(props.get("emission_color", (0.7, 0.7, 0.7))),
+                props.get("emission_intensity", 0.0),
+                Location[props.get("location", "both")],
             )
             for name, props in config.items()
         ]
 
-    def draw(self, window: Any) -> None:
+    def draw(self) -> None:
         """
         Render the scene.
 
@@ -141,85 +205,32 @@ class Scene:
         """
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glClearColor(0x33 / 255, 0x3C / 255, 0x43 / 255, 1.0)
+
+        # Set light sources
+        loc = glGetUniformLocation(self.program, "ambient_intensity")
+        glUniform1f(loc, self.ambient_light_intensity)
+        for i, light in enumerate(self.light_sources):
+            loc = glGetUniformLocation(self.program, f"lights[{i}].color")
+            glUniform3f(loc, *light.color)
+            loc = glGetUniformLocation(self.program, f"lights[{i}].intensity")
+            glUniform1f(loc, light.current)
+            loc = glGetUniformLocation(self.program, f"lights[{i}].position")
+            pos = light.position
+            glUniform3f(loc, pos["x"], pos["y"], pos["z"])
+
+        # Set objects
         for obj in self.objects:
-            mat = obj.transformation
             loc = glGetUniformLocation(self.program, "model")
-            glUniformMatrix4fv(loc, 1, TRUE, mat)
-            for coefficient, value in asdict(obj.rc):
+            glUniformMatrix4fv(loc, 1, TRUE, obj.transformation)
+            for coefficient, value in asdict(obj.rc).items():
                 loc = glGetUniformLocation(self.program, coefficient)
                 glUniform1f(loc, value)
             glBindTexture(GL_TEXTURE_2D, obj.id)
             glDrawArrays(TRIANGLES, obj.initial_vertex, obj.vertices_count)
-        glUniformMatrix4fv(
-            glGetUniformLocation(self.program, "view"),
-            1,
-            TRUE,
-            self.camera.view(),
-        )
-        glUniformMatrix4fv(
-            glGetUniformLocation(self.program, "projection"),
-            1,
-            TRUE,
-            self.camera.projection(),
-        )
-        swap_buffers(window)
 
-    def objects_state(self) -> list[list[str]]:
-        """
-        Generate a formatted state of all objects in the scene.
-
-        Returns
-        -------
-        list[list[str]]
-            A table-like structure with object positions, rotations, and scales.
-        """
-        state: list[list[str]] = []
-        for i, obj in enumerate(self.objects):
-            state.append(
-                [
-                    f"{i + 1}",
-                    f"({obj.position['x']:.2f}, {obj.position['y']:.2f}, {obj.position['z']:.2f})",
-                    f"({obj.rotation['x']:.2f}, {obj.rotation['y']:.2f}, {obj.rotation['z']:.2f})",
-                    f"{obj.scale:.2f}",
-                ]
-            )
-        return state
-
-    def camera_state(self) -> list[str]:
-        """
-        Generate a formatted state of the camera.
-
-        Returns
-        -------
-        list[str]
-            A list containing camera position, front, and up vectors.
-        """
-        cam = self.camera
-        state: list[str] = [
-            f"({cam.pos.x:.2f}, {cam.pos.y:.2f}, {cam.pos.z:.2f})",
-            f"({cam.front.x:.2f}, {cam.front.y:.2f}, {cam.front.z:.2f})",
-            f"({cam.up.x:.2f}, {cam.up.y:.2f}, {cam.up.z:.2f})",
-        ]
-        return state
-
-    def log(self) -> None:
-        """
-        Print the current state of objects and camera to the console.
-        Uses `tabulate` for pretty-printing.
-        """
-        i = self.index
-        _ = os.system("clear")
-        print("Objects' state")
-        headers = [
-            "Object",
-            "Position (x, y, z)",
-            "Rotation (x, y, z)",
-            "Scale",
-        ]
-        print(tabulate(self.objects_state(), headers=headers, tablefmt="grid"))
-        print("\nCamera's state:")
-        headers = ["Position (x, y, z)", "Front (x, y, z)", "Up (x, y, z)"]
-        print(tabulate([self.camera_state()], headers=headers, tablefmt="grid"))
-        print(
-            f"\nCurrently controlling Object {i + 1} '{self.objects[i].name}'\n"
-        )
+        # Apply view and porjection matrix multiplications and render
+        loc = glGetUniformLocation(self.program, "view")
+        glUniformMatrix4fv(loc, 1, TRUE, self.camera.view())
+        loc = glGetUniformLocation(self.program, "projection")
+        glUniformMatrix4fv(loc, 1, TRUE, self.camera.projection())
+        swap_buffers(self.window)
