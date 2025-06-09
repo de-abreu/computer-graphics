@@ -39,10 +39,10 @@
 
     # Derivable app (for `nix run`)
     app = pkgs.writeShellApplication {
-      name = "project_2";
+      name = "project_3";
       runtimeInputs = allDeps;
       text = ''
-        python ${self}/src/main.py
+        python src/main.py
       '';
     };
   in {

@@ -1,10 +1,10 @@
-# Projeto 2
+# Projeto 3
 
-![Sala de estar com mesa de café com tabuleiro de xadrez, próximo a um sofá e janela com uma
-árvore logo afora](imgs/snapshot_2025-05-11_23-35-21.png)
+![Sala de estar com mesa de café com tabuleiro de xadrez e lâmpada quadrada e vermelha sobre, próximo a um sofá com uma lâmpada azul quadrada sobre o assento e janela com uma árvore logo afora](imgs/snapshot_2025-06-09_17-56-03.png)
 
-Demonstração de um programa simples para a renderização de cenários 3D à partir
-da importação de modelos em arquivos `.obj`
+Demonstração de um programa simples fazendo uso do OpenGL para a renderização de
+cenários 3D, com texturas e iluminação, à partir da importação de modelos em
+arquivos `.obj`
 
 > Autor: Guilherme de Abreu Barreto, nUSP: 12543033
 
@@ -48,93 +48,87 @@ python src/main.py
 
 ## Adicionando modelos
 
-Para adicionar modelos 3D e uma textura para cada modelo, insira o arquivo
-`.obj` e sua textura em formato `.jpg` ou `.png` na pasta `src/objects`, como no
-seguinte exemplo:
+Crie uma pasta para conter sua pasta de modelos 3D em qualquer lugar do seu
+sistema. Ao executar o programa, você pode passar seu caminho como argumento:
 
-```
- src/objects
-├──  Bark
-│   ├──  model.mtl
-│   ├── 󰆧 model.obj
-│   └──  texture.jpg
-├──  Ceiling
-│   ├──  model.mtl
-│   ├── 󰆧 model.obj
-│   └──  texture.jpg
-├──  Chessboard
-│   ├── 󰆧 model.obj
-│   └──  texture.jpg
-├──  CoffeeTable
-│   ├──  model.mtl
-│   ├── 󰆧 model.obj
-│   └──  texture.jpg
-├──  Floor
-│   ├──  model.mtl
-│   ├── 󰆧 model.obj
-│   └──  texture.jpg
-├──  Leaves
-│   ├──  model.mtl
-│   ├── 󰆧 model.obj
-│   └──  texture.jpg
-├──  PicnicTable
-│   ├──  model.mtl
-│   ├── 󰆧 model.obj
-│   └──  texture.png
-├──  River
-│   ├──  model.mtl
-│   └── 󰆧 model.obj
-├──  SkyDome
-│   ├──  model.mtl
-│   ├── 󰆧 model.obj
-│   └──  texture.jpg
-├──  Sofa
-│   ├──  model.mtl
-│   ├── 󰆧 model.obj
-│   └──  texture.jpg
-├──  Terrain
-│   ├──  model.mtl
-│   ├── 󰆧 model.obj
-│   └──  texture.jpg
-├──  Walls
-│   ├──  model.mtl
-│   ├── 󰆧 model.obj
-│   └──  texture.png
-├──  Well
-│   ├──  model.mtl
-│   ├── 󰆧 model.obj
-│   └──  texture.png
-└──  Window
-    ├──  model.mtl
-    ├── 󰆧 model.obj
-    └──  texture.jpg
-
+```bash
+python src/main.py /caminho/para/sua/pasta/de/modelos
 ```
 
-Depois, altere o arquivo `main.py` de maneira a adicionar seus próprios modelos,
-alterando os valores preexistentes.
+Se nenhum argumento for fornecido, o programa usará `src/objects` como padrão.
+
+### Estrutura de Pastas
+
+Sua pasta de modelos deve conter subpastas para cada objeto, com a seguinte
+estrutura:
+
+```
+ sua_pasta_de_modelos
+├──  Objeto1
+│   ├── 󰆧 model.obj
+│   └──  texture.jpg (ou .png)
+├──  Objeto2
+│   ├── 󰆧 model.obj
+│   └──  texture.png
+...
+```
+
+### Configurando Objetos com config.toml
+
+Crie um arquivo `config.toml` em sua pasta de modelos para definir as
+propriedades dos objetos. Aqui está um modelo de exemplo:
+
+```toml
+[NomeDoObjeto]
+position = [0.0, 0.0, -20.0]  # coordenadas x, y, z
+rotation = [0.0, 0.0, 0.0]  # rotação x, y, z em radianos
+scale = 1.0                 # fator de escala uniforme
+location = "both"       # "internal", "external" ou "both"
+
+# Coeficientes de reflexão
+ambient_intensity = 0.5 # 0.0-1.0
+diffuse_intensity = 0.5 # 0.0-1.0
+specular_intensity = 0.5 # 0.0-1.0
+specular_expoent = 32.0
+
+emission_intensity = 0.0    # 0.0 para objetos não luminosos
+ambient_color = [1.0, 1.0, 1.0] # valores RGB (0.0-1.0)
+emission_color = [1.0, 1.0, 1.0]  # valores RGB (0.0-1.0)
+```
+
+Edite os valores para cada objeto em sua cena. O programa carregará
+automaticamente todos os objetos definidos neste arquivo. Sempre que algum valor
+não for definido, os valores padrão descritos acima são assumidos.
 
 ## 🕹️ Controles Interativos
 
 ### ⌨️ Teclado
 
-| Tecla                         | Ação do Objeto Selecionado        | Ação da Câmera         |
-| ----------------------------- | --------------------------------- | ---------------------- |
-| **<kbd>w</kbd>/<kbd>s</kbd>** | -                                 | Mover frente/trás      |
-| **<kbd>a</kbd>/<kbd>d</kbd>** | -                                 | Mover esquerda/direita |
-| **<kbd>q</kbd>/<kbd>e</kbd>** | -                                 | Mover cima/baixo       |
-| **<kbd>1</kbd>-<kbd>0</kbd>** | Selecionar objeto 1 a 10          | -                      |
-| **<kbd>z</kbd>/<kbd>x</kbd>** | Ciclar objetos (anterior/próximo) | -                      |
-| **<kbd>t</kbd>/<kbd>g</kbd>** | Mover longe/perto                 | -                      |
-| **<kbd>f</kbd>/<kbd>h</kbd>** | Mover esquerda/direita            | -                      |
-| **<kbd>r</kbd>/<kbd>y</kbd>** | Mover cima/baixo                  | -                      |
-| **<kbd>u</kbd>/<kbd>o</kbd>** | Rotacionar no eixo Z (rolagem)    | -                      |
-| **<kbd>i</kbd>/<kbd>k</kbd>** | Rotacionar no eixo X (inclinação) | -                      |
-| **<kbd>j</kbd>/<kbd>l</kbd>** | Rotacionar no eixo Y (giro)       | -                      |
-| **<kbd>c</kbd>/<kbd>v</kbd>** | Diminuir/aumentar escala          | -                      |
-| **<kbd>p</kbd>**              | Alternar modo wireframe           | -                      |
-| **<kbd>b</kbd>**              | Resetar transformações            | -                      |
-| **<kbd>esc</kbd>**            | Fechar aplicação                  | -                      |
+| Teclas                        | Câmera                      | Transladar                      | Rotacionar                  | Escalar                     | Luz                         |
+| ----------------------------- | --------------------------- | ------------------------------- | --------------------------- | --------------------------- | --------------------------- |
+| **<kbd>1-5</kbd>**            | Alternar modo               | Alternar modo                   | Alternar modo               | Alternar modo               | Alternar modo               |
+| **<kbd>z</kbd>/<kbd>x</kbd>** | Alternar objetos (ant/próx) | Alternar objetos (ant/próx)     | Alternar objetos (ant/próx) | Alternar objetos (ant/próx) | Alternar objetos (ant/próx) |
+| **<kbd>w</kbd>**              | Mover para frente           | Mover objeto para trás (z-)     | Rotacionar objeto X-        | Aumentar escala             | Alternar luz ambiente       |
+| **<kbd>s</kbd>**              | Mover para trás             | Mover objeto para frente (z+)   | Rotacionar objeto X+        | Diminuir escala             | Alternar fonte de luz 2     |
+| **<kbd>a</kbd>**              | Mover para esquerda         | Mover objeto para esquerda (x-) | Rotacionar objeto Y-        | -                           | Alternar fonte de luz 1     |
+| **<kbd>d</kbd>**              | Mover para direita          | Mover objeto para direita (x+)  | Rotacionar objeto Y+        | -                           | Alternar fonte de luz 3     |
+| **<kbd>q</kbd>**              | Mover para cima             | Mover objeto para cima (y+)     | Rotacionar objeto Z+        | -                           | -                           |
+| **<kbd>e</kbd>**              | Mover para baixo            | Mover objeto para baixo (y-)    | Rotacionar objeto Z-        | -                           | -                           |
+| **<kbd>t</kbd>**              | Alternar modo wireframe     | Alternar modo wireframe         | Alternar modo wireframe     | Alternar modo wireframe     | Alternar modo wireframe     |
+| **<kbd>r</kbd>**              | Resetar câmera              | Resetar objeto                  | Resetar objeto              | Resetar objeto              | Resetar objeto              |
+| **<kbd>esc</kbd>**            | Fechar aplicação            | Fechar aplicação                | Fechar aplicação            | Fechar aplicação            | Fechar aplicação            |
+
+### Seleção de Modo
+
+Pressione estas teclas para alternar entre os modos de interação:
+
+- **<kbd>1</kbd>**: Modo câmera (padrão)
+- **<kbd>2</kbd>**: Modo translação
+- **<kbd>3</kbd>**: Modo rotação
+- **<kbd>4</kbd>**: Modo escala
+- **<kbd>5</kbd>**: Modo controle de luz
+
+> 💡 O modo atual é exibido na saída do console.
 
 ### 🖱️Mouse ou Touchpad
 
@@ -155,6 +149,6 @@ alterando os valores preexistentes.
 O atual estado dos objetos pode ser acompanhado em uma tabela emitida ao
 console, atualizada toda vez que ocorre uma mudança neste.
 
-![Janela do programa ao lado de um terminal. O terminal exibe uma
-tabelas que descrevem o atual estado da câmera e dos objetos apresentados na cena em termos
-dos valores aplicados a transformações destes](imgs/snapshot_2025-05-12_00-13-54.png)
+![Janela do programa ao lado de um terminal. O terminal exibe
+tabelas que descrevem o atual estado da câmera,objetos apresentados, e fontes de luz na cena em termos
+dos valores aplicados às transformações destes](imgs/snapshot_2025-06-09_17-56-49.png)
