@@ -1,9 +1,10 @@
 from .dataclasses import (
     BufferData,
     Face,
+    IlluminationProperties,
     Model,
     ObjectConfig,
-    ReflectionCoeficients,
+    ReflectionCoefficients,
 )
 from .enums import Location, Mode
 from .shader import Shader
@@ -17,6 +18,7 @@ __all__ = [
     "Model",
     "ObjectConfig",
     "ObjectState",
-    "ReflectionCoeficients",
+    "IlluminationProperties",
+    "ReflectionCoefficients",
     "Shader",
 ]

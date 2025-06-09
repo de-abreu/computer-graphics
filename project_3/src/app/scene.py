@@ -5,9 +5,10 @@ from app.object import Object
 from app.light_source import Light
 from app.utils import (
     BufferData,
+    IlluminationProperties,
     Location,
     ObjectConfig,
-    ReflectionCoeficients,
+    ReflectionCoefficients,
     Shader,
 )
 from dataclasses import asdict
@@ -43,6 +44,7 @@ from OpenGL.GL import (
     glGetAttribLocation,
     glGetUniformLocation,
     glHint,
+    glUniform1i,
     glUniform1f,
     glUniform3f,
     glUniformMatrix4fv,
@@ -57,7 +59,7 @@ from glfw import (
 
 class Scene:
     """
-    A class to represent a 3D scene containing objects and a camera.
+    A class to represent a 3D scene containing objects, light sources, and a camera.
 
     Attributes
     ----------
@@ -65,20 +67,31 @@ class Scene:
         The camera viewing the scene.
     program : Any
         The OpenGL shader program ID.
+    window : Any
+        The GLFW window object.
     objects : list[Object]
         The list of 3D objects in the scene.
-    index : int
-        The index of the object currently under control.
+    light_sources : list[Light]
+        The list of light sources in the scene.
+    num_lights : int
+        The number of light sources in the scene (default: 3).
+    ambient_light_on : bool
+        Flag to toggle ambient lighting (default: True).
+
+    Methods
+    -------
+    __init__(window: Any, config_path: str) -> None
+        Initialize the scene with objects loaded from a TOML configuration file.
+    draw() -> None
+        Render the scene.
     """
 
     camera: Camera
     program: Any
     window: Any
-    objects: list[Object] = []
-    light_sources: list[Light] = []
-    num_lights: int = 3
-    ambient_light_intensity: float = 0.5
-    ambient_light_color: tuple[float, float, float] = (1.0, 1.0, 1.0)
+    _objects: list[Object] = []
+    _light_sources: list[Light] = []
+    ambient_light_on: bool = True
 
     def __init__(self, window: Any, config_path: str) -> None:
         """
@@ -100,12 +113,12 @@ class Scene:
         self.window = window
         descriptors = self._load_config(config_path)
         for i, desc in enumerate(descriptors):
-            if desc.is_emitter:
+            if desc.illumination_properties.emission_intensity > 0.01:
                 light = Light(i, desc, bd)
-                self.objects.append(light)
-                self.light_sources.append(light)
+                self._objects.append(light)
+                self._light_sources.append(light)
             else:
-                self.objects.append(Object(i, desc, bd))
+                self._objects.append(Object(i, desc, bd))
 
         shader.use()
         self._init_buffers(bd)
@@ -117,6 +130,14 @@ class Scene:
         glEnable(GL_LINE_SMOOTH)
         show_window(window)
         glEnable(GL_DEPTH_TEST)
+
+    @property
+    def objects(self) -> list[Object]:
+        return self._objects
+
+    @property
+    def light_sources(self) -> list[Light]:
+        return self._light_sources
 
     def _init_buffers(self, bd: BufferData):
         buffers = glGenBuffers(3)
@@ -150,11 +171,11 @@ class Scene:
         glVertexAttribPointer(loc, coord_size, FLOAT, False, stride, offset)
 
     def _init_light_sources(self) -> None:
-        loc = glGetUniformLocation(self.program, "ambient_color")
-        glUniform3f(loc, *self.ambient_light_color)
-        for i, light in enumerate(self.light_sources):
+        for i, light in enumerate(self._light_sources):
             loc = glGetUniformLocation(self.program, f"lights[{i}].color")
-            glUniform3f(loc, *light.color)
+            glUniform3f(loc, *light.illumination.emission_color)
+            loc = glGetUniformLocation(self.program, f"lights[{i}].location")
+            glUniform1i(loc, light.location)
 
     def _load_config(self, config_path: str) -> list[ObjectConfig]:
         """
@@ -181,14 +202,17 @@ class Scene:
                 tuple(props.get("position", (0.0, 0.0, -20.0))),
                 tuple(props.get("rotation", (0.0, 0.0, 0.0))),
                 props.get("scale", 1.0),
-                ReflectionCoeficients(
-                    props.get("diffuse_intensity", 0.5),
-                    props.get("specular_intensity", 0.5),
-                    props.get("specular_expoent", 32.0),
+                IlluminationProperties(
+                    ReflectionCoefficients(
+                        props.get("ambient_intensity", 0.5),
+                        props.get("diffuse_intensity", 0.5),
+                        props.get("specular_intensity", 0.5),
+                        props.get("specular_expoent", 32.0),
+                    ),
+                    props.get("emission_intensity", 0.0),
+                    tuple(props.get("ambient_color", (1.0, 1.0, 1.0))),
+                    tuple(props.get("emission_color", (1.0, 1.0, 1.0))),
                 ),
-                props.get("is_emitter", False),
-                tuple(props.get("emission_color", (0.7, 0.7, 0.7))),
-                props.get("emission_intensity", 0.0),
                 Location[props.get("location", "both")],
             )
             for name, props in config.items()
@@ -198,33 +222,57 @@ class Scene:
         """
         Render the scene.
 
-        Parameters
-        ----------
-        window : Any
-            The GLFW window object.
+        Returns
+        -------
+        None
         """
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glClearColor(0x33 / 255, 0x3C / 255, 0x43 / 255, 1.0)
 
-        # Set light sources
-        loc = glGetUniformLocation(self.program, "ambient_intensity")
-        glUniform1f(loc, self.ambient_light_intensity)
-        for i, light in enumerate(self.light_sources):
-            loc = glGetUniformLocation(self.program, f"lights[{i}].color")
-            glUniform3f(loc, *light.color)
+        # Send camera position
+        loc = glGetUniformLocation(self.program, "viewPos")
+        glUniform3f(loc, *self.camera.pos)
+
+        # Set point light sources
+        for i, light in enumerate(self._light_sources):
             loc = glGetUniformLocation(self.program, f"lights[{i}].intensity")
-            glUniform1f(loc, light.current)
+            glUniform1f(loc, light.intensity)
             loc = glGetUniformLocation(self.program, f"lights[{i}].position")
             pos = light.position
             glUniform3f(loc, pos["x"], pos["y"], pos["z"])
 
         # Set objects
-        for obj in self.objects:
-            loc = glGetUniformLocation(self.program, "model")
-            glUniformMatrix4fv(loc, 1, TRUE, obj.transformation)
-            for coefficient, value in asdict(obj.rc).items():
+        for obj in self._objects:
+            # Set illumination parameters
+            for coefficient, value in asdict(
+                obj.illumination.reflection_coefficients
+            ).items():
                 loc = glGetUniformLocation(self.program, coefficient)
                 glUniform1f(loc, value)
+
+            if not self.ambient_light_on:
+                loc = glGetUniformLocation(self.program, "ambient_intensity")
+                glUniform1f(loc, 0.0)
+
+            loc = glGetUniformLocation(self.program, "ambient_color")
+            glUniform3f(loc, *obj.illumination.ambient_color)
+
+            loc = glGetUniformLocation(self.program, "is_emitter")
+            if isinstance(obj, Light):
+                glUniform1i(loc, obj.on)
+                loc = glGetUniformLocation(self.program, "emission_color")
+                glUniform3f(loc, *obj.illumination.emission_color)
+            else:
+                glUniform1i(loc, False)
+
+            # Set model parameters
+            loc = glGetUniformLocation(self.program, "object_location")
+            glUniform1i(loc, obj.location)
+
+            loc = glGetUniformLocation(self.program, "model")
+            glUniformMatrix4fv(loc, 1, TRUE, obj.transformation)
+
             glBindTexture(GL_TEXTURE_2D, obj.id)
             glDrawArrays(TRIANGLES, obj.initial_vertex, obj.vertices_count)
 

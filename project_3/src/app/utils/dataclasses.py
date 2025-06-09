@@ -1,12 +1,25 @@
 from dataclasses import dataclass, field
 from .enums import Location
 
-
 @dataclass
-class ReflectionCoeficients:
+class ReflectionCoefficients:
+    ambient_intensity: float
     diffuse_intensity: float
     specular_intensity: float
     specular_exponent: float
+
+
+@dataclass
+class IlluminationProperties:
+
+    reflection_coefficients: ReflectionCoefficients
+
+    # Light emission
+    emission_intensity: float
+
+    # Light color
+    ambient_color: tuple[float, float, float]
+    emission_color: tuple[float, float, float]
 
 
 @dataclass
@@ -31,10 +44,7 @@ class ObjectConfig:
     position: tuple[float, float, float]
     rotation: tuple[float, float, float]
     scale: float
-    reflection_coeficients: ReflectionCoeficients
-    is_emitter: bool
-    emission_color: tuple[float, float, float]
-    emission_intensity: float
+    illumination_properties: IlluminationProperties
     location: Location = Location.both
 
 

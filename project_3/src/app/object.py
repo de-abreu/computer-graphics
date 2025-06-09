@@ -6,7 +6,7 @@ from app.utils import (
     Model,
     ObjectConfig as Config,
     ObjectState as State,
-    ReflectionCoeficients,
+    IlluminationProperties,
 )
 from OpenGL.GL.images import glTexImage2D
 from OpenGL.constants import GL_UNSIGNED_BYTE
@@ -28,9 +28,12 @@ from numpy.typing import NDArray
 
 
 class Object:
+    """
+    A class representing a 3D object in the scene.
+    """
     name: str
     location: Location
-    rc: ReflectionCoeficients
+    illumination: IlluminationProperties
     _id: int
     _initial_vertex: int
     _vertices_count: int
@@ -39,10 +42,21 @@ class Object:
     _transformation: NDArray[float32]
 
     def __init__(self, id: int, config: Config, bd: BufferData):
+        """Initialize the object with a unique ID, configuration, and buffer data.
+
+        Parameters
+        ----------
+        id : int
+            The unique identifier for the object.
+        config : Config
+            The configuration for the object (e.g., model name, path, illumination).
+        bd : BufferData
+            The buffer data for storing vertices, texture coordinates, and normals.
+        """
         self._id = id
         self.name = config.model_name
         self.location = config.location
-        self.rc = config.reflection_coeficients
+        self.illumination = config.illumination_properties
         self._initial_vertex, self._vertices_count = self._load_object(
             f"{config.path}/{config.model_name}", bd
         )
@@ -99,15 +113,6 @@ class Object:
         self._update()
 
     def _load_model(self, path: str) -> Model:
-        """
-        Load the 3D model from an OBJ file.
-
-        Returns
-        -------
-        Model
-            A dictionary containing the vertices, normals and texture
-            coordinates associated with faces of an 3D model.
-        """
         model = Model()
         material: str | None = None
 
@@ -148,13 +153,6 @@ class Object:
         return model
 
     def _load_texture(self, path: str):
-        """
-        Load and bind the texture for the object.
-
-        Notes
-        -----
-        The texture file is expected to be in the `src/objects/{model_name}/texture.*` path.
-        """
         glBindTexture(GL_TEXTURE_2D, self._id)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
@@ -178,40 +176,12 @@ class Object:
 
     @staticmethod
     def _triangulate_face(face: list[int]) -> list[int]:
-        """
-        Convert a face into a set of triangles using fan triangulation.
-
-        Parameters
-        ----------
-        face : list[int]
-            The indices of the vertices forming the face.
-
-        Returns
-        -------
-        list[int]
-            The indices of the vertices forming the triangulated face.
-        """
         triangulated_face: list[int] = []
         for i in range(1, len(face) - 1):
             triangulated_face.extend([face[0], face[i], face[i + 1]])
         return triangulated_face
 
     def _load_object(self, path: str, bd: BufferData) -> tuple[int, int]:
-        """
-        Load the object's vertices and texture coordinates into the global lists.
-
-        Parameters
-        ----------
-        vertices_list : list[tuple[float, float, float]]
-            The global list of vertices.
-        texture_coord_list : list[tuple[float, float]]
-            The global list of texture coordinates.
-
-        Returns
-        -------
-        tuple[int, int]
-            The starting index and count of the object's vertices in the global list.
-        """
         model = self._load_model(path)
         start = len(bd.vertices)
         for face in model.faces:
@@ -232,19 +202,6 @@ class Object:
         self._current.copy(self._initial)
 
     def _rotationMatrix(self, axis: str) -> NDArray[float32]:
-        """
-        Generate a rotation matrix for the specified axis.
-
-        Parameters
-        ----------
-        axis : str
-            The axis of rotation ('x', 'y', or 'z').
-
-        Returns
-        -------
-        NDArray[float32]
-            The 4x4 rotation matrix.
-        """
         c = cos(self.rotation[axis])
         s = sin(self.rotation[axis])
         match axis:
@@ -272,9 +229,6 @@ class Object:
         return array(matrix, dtype=float32)
 
     def _update(self):
-        """
-        Update the object's transformation matrix based on its current position, rotation, and scale.
-        """
         s = self.scale
         scale = array(
             [

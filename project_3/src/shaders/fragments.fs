@@ -30,9 +30,9 @@ uniform float specular_exponent;
 uniform vec3 viewPos;
 
 // Object-Specific Behavior Parameters
-uniform bool isEmitter;       // Is this object a light source itself (and thus glows)?
-uniform vec3 emissionColor;   // If isEmitter, its glow color
-uniform int  objectLocation;  // Location type of the current object being rendered
+uniform bool is_emitter;       // Is this object a light source itself (and thus glows)?
+uniform vec3 emission_color;   // If is_emitter, its glow color
+uniform int  object_location;  // Location type of the current object being rendered
 
 // Varying Inputs
 varying vec2 out_textureCoords;
@@ -46,8 +46,8 @@ void main() {
     vec4 textureColor = texture2D(samplerTexture, out_textureCoords);
 
     // 1. Handle Emissive Objects (Light source objects glow)
-    if (isEmitter) {
-        gl_FragColor = vec4(emissionColor, textureColor.a);
+    if (is_emitter) {
+        gl_FragColor = vec4(emission_color, textureColor.a);
         return; // No further lighting for purely emissive surfaces
     }
 
@@ -66,9 +66,9 @@ void main() {
     for (int i = 0; i < NUM_LIGHTS; ++i) {
         // Rule 2: Location-based light affection
         // Accessing struct members: lights[i].location
-        if (lights[i].location == objectLocation ||
+        if (lights[i].location == object_location ||
             lights[i].location == LOCATION_BOTH ||
-            objectLocation == LOCATION_BOTH) {
+            object_location == LOCATION_BOTH) {
             // Accessing struct members: lights[i].color, lights[i].intensity, lights[i].position
             vec3 currentLightEffectiveColor = lights[i].color * lights[i].intensity;
 

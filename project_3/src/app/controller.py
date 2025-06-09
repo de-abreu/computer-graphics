@@ -48,11 +48,30 @@ from tabulate import tabulate
 
 
 class Controller:
+    """Handles user input and controls the scene's objects, camera, and lights.
+
+    Attributes
+    ----------
+    current_object : int
+        Index of the currently selected object in the scene.
+    mode : Mode
+        Current interaction mode (e.g., camera, translating, rotating, scaling, light).
+    scene : Scene
+        The scene being controlled.
+    """
+
     current_object: int = 0
     mode: Mode = Mode.camera
     scene: Scene
 
     def __init__(self, scene: Scene) -> None:
+        """Initialize the Controller with a scene and set up input callbacks.
+
+        Parameters
+        ----------
+        scene : Scene
+            The scene to be controlled.
+        """
         self.scene = scene
         win = scene.window
         set_window_user_pointer(win, self)
@@ -60,39 +79,20 @@ class Controller:
         if raw_mouse_motion_supported():
             set_input_mode(win, RAW_MOUSE_MOTION, TRUE)
 
-        set_key_callback(win, self.keyboard_callback)
-        set_framebuffer_size_callback(win, self.framebuffer_callback)
-        set_cursor_pos_callback(win, self.mouse_callback)
-        set_scroll_callback(win, self.scroll_callback)
+        set_key_callback(win, self._keyboard_callback)
+        set_framebuffer_size_callback(win, self._framebuffer_callback)
+        set_cursor_pos_callback(win, self._mouse_callback)
+        set_scroll_callback(win, self._scroll_callback)
 
     @staticmethod
-    def keyboard_callback(
+    def _keyboard_callback(
         window: Any, key: int, _scancode: int, action: int, _mods: int
     ):
-        """
-        Handle keyboard input for controlling the scene and objects.
-
-        Parameters
-        ----------
-        window : Any
-            The GLFW window object.
-        key : int
-            The key that was pressed or released.
-        _scancode : int
-            The system-specific scancode of the key.
-        action : int
-            The action (PRESS, REPEAT, or RELEASE).
-        _mods : int
-            Bit field describing which modifier keys were held down.
-
-        Notes
-        -----
-        This function maps keyboard inputs to camera and object transformations.
-        """
         ctrl: Controller = get_window_user_pointer(window)
         i = ctrl.current_object
-        o = ctrl.scene.objects[i]
-        c = ctrl.scene.camera
+        scene = ctrl.scene
+        o = scene.objects[i]
+        c = scene.camera
         step = 0.1
 
         # INFO: WASD and QE keys set to manipulate objects or camera
@@ -107,10 +107,7 @@ class Controller:
                 case Mode.scaling:
                     o.scale += step
                 case _:
-                    intensity = ctrl.scene.ambient_light_intensity
-                    ctrl.scene.ambient_light_intensity = (
-                        5.0 if intensity < 0.01 else 0.0
-                    )
+                    scene.ambient_light_on = not scene.ambient_light_on
 
         if key == S and action in (PRESS, REPEAT):
             match ctrl.mode:
@@ -123,7 +120,7 @@ class Controller:
                 case Mode.scaling:
                     o.scale -= step
                 case _:
-                    _ = ctrl.scene.light_sources[1].toggle()
+                    _ = scene.light_sources[1].toggle()
 
         if key == A and action in (PRESS, REPEAT):
             match ctrl.mode:
@@ -134,7 +131,7 @@ class Controller:
                 case Mode.translating:
                     o.position["x"] -= step
                 case Mode.light:
-                    _ = ctrl.scene.light_sources[0].toggle()
+                    _ = scene.light_sources[0].toggle()
                 case _:
                     pass
 
@@ -147,7 +144,7 @@ class Controller:
                 case Mode.translating:
                     o.position["x"] += step
                 case Mode.light:
-                    _ = ctrl.scene.light_sources[2].toggle()
+                    _ = scene.light_sources[2].toggle()
                 case _:
                     pass
 
@@ -202,45 +199,17 @@ class Controller:
             set_window_should_close(window, True)
 
         if key == Z and action in (PRESS, REPEAT):
-            ctrl.current_object = (i - 1) % len(ctrl.scene.objects)
+            ctrl.current_object = (i - 1) % len(scene.objects)
 
         if key == X and action in (PRESS, REPEAT):
-            ctrl.current_object = (i + 1) % len(ctrl.scene.objects)
+            ctrl.current_object = (i + 1) % len(scene.objects)
 
     @staticmethod
-    def framebuffer_callback(_window: Any, width: int, height: int) -> None:
-        """
-        Handle framebuffer size changes.
-
-        Parameters
-        ----------
-        _window : Any
-            The GLFW window object (unused).
-        width : int
-            The new width of the framebuffer.
-        height : int
-            The new height of the framebuffer.
-
-        Notes
-        -----
-        Updates the viewport to match the new framebuffer dimensions.
-        """
+    def _framebuffer_callback(_window: Any, width: int, height: int) -> None:
         glViewport(0, 0, width, height)
 
     @staticmethod
-    def mouse_callback(window: Any, x_pos: float, y_pos: float) -> None:
-        """
-        Handle mouse movement for camera rotation.
-
-        Parameters
-        ----------
-        window : Any
-            The GLFW window object.
-        x_pos : float
-            The current x-coordinate of the mouse cursor.
-        y_pos : float
-            The current y-coordinate of the mouse cursor.
-        """
+    def _mouse_callback(window: Any, x_pos: float, y_pos: float) -> None:
         ctrl: Controller = get_window_user_pointer(window)
         c = ctrl.scene.camera
 
@@ -257,31 +226,13 @@ class Controller:
         _ = c.process_mouse_movement(x_offset, y_offset)
 
     @staticmethod
-    def scroll_callback(window: Any, _x_offset: float, y_offset: float) -> None:
-        """
-        Handle mouse scroll for camera zoom.
-
-        Parameters
-        ----------
-        window : Any
-            The GLFW window object.
-        _x_offset : float
-            The horizontal scroll offset (unused).
-        y_offset : float
-            The vertical scroll offset.
-        """
+    def _scroll_callback(
+        window: Any, _x_offset: float, y_offset: float
+    ) -> None:
         ctrl: Controller = get_window_user_pointer(window)
         _ = ctrl.scene.camera.process_scroll_movement(y_offset)
 
-    def objects_state(self) -> list[list[str]]:
-        """
-        Generate a formatted state of all objects in the scene.
-
-        Returns
-        -------
-        list[list[str]]
-            A table-like structure with object positions, rotations, and scales.
-        """
+    def _objects_state(self) -> list[list[str]]:
         state: list[list[str]] = []
         for i, obj in enumerate(self.scene.objects):
             state.append(
@@ -294,43 +245,56 @@ class Controller:
             )
         return state
 
-    def camera_state(self) -> list[str]:
-        """
-        Generate a formatted state of the camera.
-
-        Returns
-        -------
-        list[str]
-            A list containing camera position, front, and up vectors.
-        """
+    def _camera_state(self) -> list[str]:
         cam = self.scene.camera
-        state: list[str] = [
+        return [
             f"({cam.pos.x:.2f}, {cam.pos.y:.2f}, {cam.pos.z:.2f})",
             f"({cam.front.x:.2f}, {cam.front.y:.2f}, {cam.front.z:.2f})",
             f"({cam.up.x:.2f}, {cam.up.y:.2f}, {cam.up.z:.2f})",
         ]
+
+    def _lights_state(self) -> list[str]:
+        scene = self.scene
+        state = ["On" if scene.ambient_light_on else "Off"]
+        for light in scene.light_sources:
+            state.append("On" if light.on else "Off")
         return state
 
     def log(self) -> None:
-        """
-        Print the current state of objects and camera to the console.
-        Uses `tabulate` for pretty-printing.
+        """Print the current state of objects, camera, and lights to the console.
+
+        Notes
+        -----
+        - Uses `tabulate` with `tablefmt="simple"` for aligned output without borders.
+        - Clears the console before printing for better readability.
+        - Displays:
+            - Objects' positions, rotations, and scales.
+            - Camera's position, front, and up vectors.
+            - Lights' on/off states.
+            - Currently controlled object and interaction mode.
         """
         i = self.current_object
-        o = self.scene.objects
+        scene = self.scene
+        o = scene.objects
+        light = scene.light_sources
         _ = os.system("clear")
 
-        print("Objects' state")
+        print("Objects' state:")
         headers = [
             "Object",
             "Position (x, y, z)",
             "Rotation (x, y, z)",
             "Scale",
         ]
-        print(tabulate(self.objects_state(), headers=headers, tablefmt="grid"))
+        print(tabulate(self._objects_state(), headers=headers))
+
         print("\nCamera's state:")
         headers = ["Position (x, y, z)", "Front (x, y, z)", "Up (x, y, z)"]
-        print(tabulate([self.camera_state()], headers=headers, tablefmt="grid"))
+        print(tabulate([self._camera_state()], headers=headers))
+
+        print("\nLights' state:")
+        headers = ["Ambient"] + [f"Light {i}" for i in range(len(light))]
+        print(tabulate([self._lights_state()], headers=headers))
 
         title = f"\nCurrently controlling Object {i + 1} '{o[i].name}'. Mode: "
         match self.mode:
